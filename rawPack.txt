@@ -1,0 +1,116 @@
+#University of York Computer Lab Ubuntu Software List, in support of Electronic Engineering Programmes (primarily Intelligent Robotics MSc at present)
+#This is the complete list of software to be installed on Ubuntu Linux 20.04 images for laboratory computers and VirtualBox/USB Flash images
+#It is not recommended to run this as a script in case problems occur, run each installation line separately and departmental software requires manual installation also
+#Others who use EE/Physics Computer Labs at York are welcome to add packages that would benefit them
+#Dr. Mark A Post, May 2020, mark.post@york.ac.uk
+
+#Add repositories
+sudo add-apt-repository universe
+sudo add-apt-repository multiverse
+sudo add-apt-repository restricted
+sudo apt update
+sudo apt upgrade
+
+#Set up environment
+sudo ufw status verbose
+sudo apt remove unity-lens-shopping
+sudo apt purge ubuntu-web-launchers
+
+#If using GNOME desktop environment (the default) install these
+sudo apt install --install-recommends gnome-tweak-tool gufw guake gpaste gnome-shell-extensions-gpaste gnome-tweak-tool
+
+#If using KDE desktop environment (optional, only if you like KDE) install it with these packages
+sudo tasksel install kubuntu-desktop
+sudo apt install --install-recommends kdevelop yakuake kile
+
+#General packages
+echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections
+sudo apt install --install-recommends gpm ssh screen nfs-common net-tools ubuntu-restricted-extras libdvd-pkg synaptic aptitude python3-smbc smbclient cifs-utils gparted partclone net-tools vlc gimp bluefish chromium-browser firefox thunderbird xul-ext-lightning filezilla morse-simulator network-manager-openconnect-gnome
+sudo dpkg-reconfigure libdvd-pkg
+
+#Development packages
+sudo apt install --install-recommends build-essential codeblocks codelite octave spyder3 python3-scipy python3-websockets python3-imageio python3-vtk7 python3-pydot-ng libhdf5-dev python3-h5py
+sudo snap install --classic eclipse
+
+#Lab packages
+sudo apt install --install-recommends science-all sagemath-jupyter sagemath-doc-en
+
+#CAD packages
+sudo apt install --install-recommends openscad freecad kicad kicad-doc-en
+
+#If installing to a laptop include power management
+sudo apt install --install-recommends tlp tlp-rdw
+
+#Useful for creating bootable USB flash images
+sudo add-apt-repository ppa:mkusb/ppa
+sudo apt update
+sudo apt install --install-recommends mkusb mkusb-nox usb-pack-efi
+
+#Robot Operating System install from PPA
+sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+sudo -E apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+sudo apt update
+sudo apt install ros-noetic-desktop-full python-rosinstall python-rosinstall-generator python-wstool ros-noetic-teleop-twist-keyboard ros-noetic-teleop-twist-joy ros-noetic-teleop-tools
+echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+source /opt/ros/noetic/setup.bash
+sudo rosdep init
+rosdep update
+
+#CUDA-Ensure that you have a working nvidia-driver-x for your graphics card (at time of this writing, nvidia-driver-440 and cuda 10.2)
+#Specific packages for CUDA will vary depending on local machine architecture, instructions from https://developer.nvidia.com/cuda-10.2-download-archive?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=1804&target_type=deblocal
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-ubuntu1804.pin
+sudo mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600
+wget http://developer.download.nvidia.com/compute/cuda/10.2/Prod/local_installers/cuda-repo-ubuntu1804-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
+sudo dpkg -i cuda-repo-ubuntu1804-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
+sudo apt-key add /var/cuda-repo-10-2-local-10.2.89-440.33.01/7fa2af80.pub
+sudo apt-get update
+sudo apt install cuda
+echo PATH='$PATH:/usr/local/cuda-10.2/bin' >> ~/.bashrc
+
+#Machine Learning and Reasoning packages
+sudo apt install --install-recommends python3-pycuda
+#Note: pip installs these packages ONLY for the current user, there seems to be no available method for system-wide install
+pip3 install pytorch-wrapper pytorch-ignite
+pip3 install tensorflow tensorflow-gpu
+
+#Required for using packages locally installed with pip3
+echo PATH='$PATH:~/.local/bin' >> ~/.bashrc
+
+
+#Departmental Packages
+#From previous list of required software and current list of desired software for online teaching
+sudo apt install --install-recommends arduino puredata pd-pduino audacity geogebra-gnome git ngspice virtualbox audacity mu-editor
+
+#install pycharm (though IMHO Spyder is better)
+
+#install Pd-extended_0.43.4-source.tar.bz2
+
+#install purr-data-2.10.1.tar.gz
+
+#install Aurora for Audacity (aurora-linux64-20120127.tar.bz2)
+
+#install Audacity - Wave Stats Plugin (stats.ny)
+
+#install LTSpice OR Qucs (Quite Universal Circuit Simulator) OR falstad?
+
+#install ADI Scopy for Analog Discovery board (or ADALM2000) from https://github.com/analogdevicesinc/scopy
+
+#install PicoScope software from https://www.picotech.com/downloads/linux
+
+#install STM32Duino toolchain for Arduino from git:: https://github.com/stm32duino - We are mainly using an STM32F103 “blue pill” equivalent board.
+
+#install V-REP/CoppeliaSim EDU (a simple unzip) from this repository to /opt/: https://www.coppeliarobotics.com/downloads
+
+#install Xilinx Vivado (non-free, needs license)
+
+#install MATLAB (if needed, it is non-free, ideally Octave is a free and mostly compatible alternative)
+
+
+#Finish installing all needed support and clean up
+sudo apt install $(check-language-support)
+sudo apt autoremove --purge
+sudo apt clean
+
+#Required for printing within the department
+sudo sed -i '/^\[global]/aclient max protocol = SMB3' /etc/samba/smb.conf
