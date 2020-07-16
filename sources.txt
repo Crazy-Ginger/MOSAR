@@ -1,7 +1,0 @@
-Hotdock Connector details: https://www.spaceapplications.com/wp-content/uploads/2019/05/7-product-sheet-hotdock-1.pdf
-
-Modular robotic systems: Methods and algorithms for abstraction, planning, control, and synchronization: https://www.sciencedirect.com/science/article/pii/S0004370215000260
-
-A Distributed Reconfiguration Planning Algorithm for Modular Robots: https://ieeexplore.ieee.org/document/8769941
-
-An Efficient Algorithm for self-reconfiguration Planning in a Modular Robot: https://www.researchgate.net/publication/224156000_An_Efficient_Algorithm_for_Self-Reconfiguration_Planning_in_a_Modular_Robot
