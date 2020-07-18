@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """ shut up error"""
 import networkx as nx
+from matplotlib import pyplot as plt
 
 class Spacecraft:
     """A generic spacecraft class that contains a dictionary of modules and connections"""
@@ -8,6 +9,7 @@ class Spacecraft:
         self.modules = {}
         self._dimensions_ = dimensions
         self.root = None
+        self.connections = []
 
     def add_module(self, new_id):
         """Add an unconnected module to the craft dictionary"""
@@ -31,25 +33,40 @@ class Spacecraft:
         mod_b_port = int(mod_b_port)
         try:
             if self.modules[mod_a][mod_a_port] is not None:
-                raise ValueError("The port on module A is already in use")
+                raise ValueError("The port %d on module A is already in use" %(mod_a_port))
             if self.modules[mod_b][mod_b_port] is not None:
-                raise ValueError("The port on module B is already in use")
+                raise ValueError("The port %d on module B is already in use" %(mod_b_port))
         except IndexError:
             raise IndexError("That port number does not exist in this dimension")
 
         self.modules[mod_a][mod_a_port] = mod_b
         self.modules[mod_b][mod_b_port] = mod_a
+        self.connections.append((mod_a, mod_b))
 
-    def get_nodes(self):
-        """returns keys of modules as list"""
-        return list(self.modules.keys())
+    def get_graph(self):
+        """returns a graph with nodes and edges"""
+        graph = nx.Graph()
+        graph.add_nodes_from(self.modules.keys())
+        if len(self.connections) != 0:
+            graph.add_edges_from(self.connections)
+        return graph
+
+    def get_connections(self):
+        """outputs all the connections between all the moduels"""
+        output = ""
+        for key in self.modules:
+            output += key
+            output += str(self.modules[key]) + "\n"
+        print(output)
 
 
 CRAFT = Spacecraft()
 CRAFT.add_module("MOS1")
 CRAFT.add_module("MOS2")
 CRAFT.add_module("MOS3")
-GRAPH = nx.Graph()
-GRAPH.add_nodes_from(CRAFT.get_nodes())
-print(GRAPH.nodes())
-print(GRAPH.edges())
+CRAFT.connect("MOS1", 1, "MOS2", 2)
+CRAFT.connect("MOS2", 3, "MOS3", 0)
+GRAPH = CRAFT.get_graph()
+print(CRAFT.root)
+nx.draw(GRAPH, with_labels=True)
+plt.show()
