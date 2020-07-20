@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """ shut up error"""
+import operator as op
 import networkx as nx
 from matplotlib import pyplot as plt
-import operator as op
 
 class Spacecraft:
     """A generic spacecraft class that contains a dictionary of modules and connections"""
     def __init__(self, dimensions=2):
         self.modules = {}
-        self._dimensions_ = dimensions
+        self._dimensions = dimensions
         self.root = None
         self.connections = []
         self.positions = {}
 
     def add_module(self, new_id):
         """Add an unconnected module to the craft dictionary"""
-        self.modules[str(new_id)] = [None]*(self._dimensions_*2)
+        self.modules[str(new_id)] = [None]*(self._dimensions*2)
         if self.root is None:
             self.root = str(new_id)
             self.positions[str(new_id)] = (0, 0)
@@ -25,7 +25,7 @@ class Spacecraft:
         if self.root is None:
             raise KeyError("There are no existing modules to connect to")
 
-        self.modules[str(a_id)] = [None]*(self._dimensions_*2)
+        self.modules[str(a_id)] = [None]*(self._dimensions*2)
         self.connect(a_id, b_id, a_port, b_port)
 
     def connect(self, mod_a, mod_a_port, mod_b, mod_b_port):
@@ -55,20 +55,29 @@ class Spacecraft:
             if abs(sum(tuple(map(op.sub, self.positions[mod_a], self.positions[mod_b])))) != 1:
                 raise KeyError("Modules %s, %s cannot be connected" %(mod_a, mod_b))
         elif mod_a in self.positions:
-            self.positions[str(mod_b)] = self.__position_get__(mod_a_port, mod_a)
+            self.positions[str(mod_b)] = self._position_get(mod_a_port, mod_a)
         elif mod_b in self.positions:
-            self.positions[str(mod_a)] = self.__position_get__(mod_b_port, mod_b)
+            self.positions[str(mod_a)] = self._position_get(mod_b_port, mod_b)
 
         self.modules[mod_a][mod_a_port] = mod_b
         self.modules[mod_b][mod_b_port] = mod_a
         self.connections.append((mod_a, mod_b))
 
-    def disconnect(self, mod_id, mod_port):
+    def disconnect(self, mod_id, port_id):
         """takes a module id and port number and disconnects that port"""
         mod_id = str(mod_id)
-        mod_port = int(mod_port)
-        if self.connections[mod_id][mod_port] == None:
-            
+        port_id = int(port_id)
+        if self.modules[mod_id][port_id] is None:
+            raise ValueError("Port %d on module: %s is not connected" %(port_id, mod_id))
+
+        self.modules[self.modules[mod_id][port_id]][(port_id+2)%(self._dimensions*2)] = None
+
+        try:
+            self.connections.remove(mod_id, self.modules[mod_id][port_id])
+        except ValueError:
+            self.connections.remove(self.modules[mod_id][port_id], mod_id)
+        self.modules[mod_id][port_id] = None
+
 
     def get_graph(self):
         """returns a graph with nodes and edges"""
@@ -86,7 +95,7 @@ class Spacecraft:
             output += str(self.modules[key]) + "\n"
         print(output)
 
-    def __position_get__(self, port, mod_id):
+    def _position_get(self, port, mod_id):
         """pass port of unconnected module and id of connected module
         returns position of newly connected module"""
         if  port in (0, 2):
