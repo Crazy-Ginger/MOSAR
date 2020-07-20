@@ -78,7 +78,6 @@ class Spacecraft:
             self.connections.remove(self.modules[mod_id][port_id], mod_id)
         self.modules[mod_id][port_id] = None
 
-
     def get_graph(self):
         """returns a graph with nodes and edges"""
         graph = nx.Graph()
@@ -104,23 +103,8 @@ class Spacecraft:
             position = tuple(map(op.add, self.positions[mod_id], (0, (port-2)*-1)))
         return position
 
-CRAFT = Spacecraft()
-CRAFT.add_module("MOS1")
-CRAFT.add_module("MOS2")
-CRAFT.add_module("MOS3")
-CRAFT.add_module("MOS4")
-CRAFT.add_module("MOS5")
-CRAFT.add_module("MOS6")
-CRAFT.add_module("MOS7")
-
-CRAFT.connect("MOS1", 2, "MOS2", 0)
-CRAFT.connect("MOS2", 1, "MOS3", 3)
-CRAFT.connect("MOS2", 2, "MOS4", 0)
-CRAFT.connect("MOS4", 1, "MOS5", 3)
-CRAFT.connect("MOS5", 1, "MOS6", 3)
-CRAFT.connect("MOS7", 1, "MOS2", 3)
-CRAFT.connect("MOS3", 2, "MOS5", 0)
-GRAPH = CRAFT.get_graph()
-print(CRAFT.positions)
-nx.draw(GRAPH, pos=CRAFT.positions, with_labels=True)
-plt.show()
+    def display(self):
+        """displays a graph of the modules"""
+        graph = self.get_graph()
+        nx.draw(graph, pos=self.positions, with_labels=True)
+        plt.show()
