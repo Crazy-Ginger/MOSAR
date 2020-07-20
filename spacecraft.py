@@ -63,6 +63,13 @@ class Spacecraft:
         self.modules[mod_b][mod_b_port] = mod_a
         self.connections.append((mod_a, mod_b))
 
+    def disconnect(self, mod_id, mod_port):
+        """takes a module id and port number and disconnects that port"""
+        mod_id = str(mod_id)
+        mod_port = int(mod_port)
+        if self.connections[mod_id][mod_port] == None:
+            
+
     def get_graph(self):
         """returns a graph with nodes and edges"""
         graph = nx.Graph()
