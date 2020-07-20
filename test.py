@@ -2,6 +2,7 @@
 """ shut up error"""
 import networkx as nx
 from matplotlib import pyplot as plt
+import operator as op
 
 class Spacecraft:
     """A generic spacecraft class that contains a dictionary of modules and connections"""
@@ -10,12 +11,14 @@ class Spacecraft:
         self._dimensions_ = dimensions
         self.root = None
         self.connections = []
+        self.positions = {}
 
     def add_module(self, new_id):
         """Add an unconnected module to the craft dictionary"""
         self.modules[str(new_id)] = [None]*(self._dimensions_*2)
         if self.root is None:
             self.root = str(new_id)
+            self.positions[str(new_id)] = (0, 0)
 
     def add_connected_module(self, a_id, b_id, a_port, b_port):
         """Adds a module that is connected and modifies the existing module to connect it"""
@@ -26,11 +29,20 @@ class Spacecraft:
         self.connect(a_id, b_id, a_port, b_port)
 
     def connect(self, mod_a, mod_a_port, mod_b, mod_b_port):
-        """Connects the 2 passed moduleswith the specified ports"""
+        """Connects the 2 passed moduleswith the specified ports
+        as orientation is going to be considered in future code it takes both ports"""
         mod_a = str(mod_a)
         mod_b = str(mod_b)
         mod_a_port = int(mod_a_port)
         mod_b_port = int(mod_b_port)
+
+        # as orienttation is not yet supported checks that modules are all aligned
+        if mod_a_port == mod_b_port and {mod_a_port, mod_b_port} != {0, 2}:
+            raise ValueError("Ports must match 0, 2 or 1,3 (orientation is not supported")
+        if mod_a_port == mod_b_port and {mod_a_port, mod_b_port} != {1, 3}:
+            raise ValueError("Ports must match 0, 2 or 1,3 (orientation is not supported")
+
+        # checks that the ports are not already in use
         try:
             if self.modules[mod_a][mod_a_port] is not None:
                 raise ValueError("The port %d on module A is already in use" %(mod_a_port))
@@ -38,6 +50,14 @@ class Spacecraft:
                 raise ValueError("The port %d on module B is already in use" %(mod_b_port))
         except IndexError:
             raise IndexError("That port number does not exist in this dimension")
+
+        if (mod_a in self.positions) and (mod_b in self.positions):
+            if abs(sum(tuple(map(op.sub, self.positions[mod_a], self.positions[mod_b])))) != 1:
+                raise KeyError("Modules %s, %s cannot be connected" %(mod_a, mod_b))
+        elif mod_a in self.positions:
+            self.positions[str(mod_b)] = self.__position_get__(mod_a_port, mod_a)
+        elif mod_b in self.positions:
+            self.positions[str(mod_a)] = self.__position_get__(mod_b_port, mod_b)
 
         self.modules[mod_a][mod_a_port] = mod_b
         self.modules[mod_b][mod_b_port] = mod_a
@@ -59,14 +79,32 @@ class Spacecraft:
             output += str(self.modules[key]) + "\n"
         print(output)
 
+    def __position_get__(self, port, mod_id):
+        """pass port of unconnected module and id of connected module
+        returns position of newly connected module"""
+        if  port in (0, 2):
+            position = tuple(map(op.add, self.positions[mod_id], (port-1, 0)))
+        elif  port in (1, 3):
+            position = tuple(map(op.add, self.positions[mod_id], (0, (port-2)*-1)))
+        return position
 
 CRAFT = Spacecraft()
 CRAFT.add_module("MOS1")
 CRAFT.add_module("MOS2")
 CRAFT.add_module("MOS3")
-CRAFT.connect("MOS1", 1, "MOS2", 2)
-CRAFT.connect("MOS2", 3, "MOS3", 0)
+CRAFT.add_module("MOS4")
+CRAFT.add_module("MOS5")
+CRAFT.add_module("MOS6")
+CRAFT.add_module("MOS7")
+
+CRAFT.connect("MOS1", 2, "MOS2", 0)
+CRAFT.connect("MOS2", 1, "MOS3", 3)
+CRAFT.connect("MOS2", 2, "MOS4", 0)
+CRAFT.connect("MOS4", 1, "MOS5", 3)
+CRAFT.connect("MOS5", 1, "MOS6", 3)
+CRAFT.connect("MOS7", 1, "MOS2", 3)
+CRAFT.connect("MOS3", 2, "MOS5", 0)
 GRAPH = CRAFT.get_graph()
-print(CRAFT.root)
-nx.draw(GRAPH, with_labels=True)
+print(CRAFT.positions)
+nx.draw(GRAPH, pos=CRAFT.positions, with_labels=True)
 plt.show()
