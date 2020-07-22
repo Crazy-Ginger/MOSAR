@@ -19,7 +19,10 @@ def main():
     craft.connect("MOS5", 1, "MOS6", 3)
     craft.connect("MOS7", 1, "MOS2", 3)
     craft.connect("MOS3", 2, "MOS5", 0)
+    craft.display()
 
+
+    craft.disconnect("MOS3", 2)
     craft.display()
 
 

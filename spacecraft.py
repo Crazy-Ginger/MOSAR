@@ -73,12 +73,12 @@ class Spacecraft:
         self.modules[self.modules[mod_id][port_id]][(port_id+2)%(self._dimensions*2)] = None
 
         try:
-            self.connections.remove(mod_id, self.modules[mod_id][port_id])
+            self.connections.remove((mod_id, self.modules[mod_id][port_id]))
         except ValueError:
-            self.connections.remove(self.modules[mod_id][port_id], mod_id)
+            self.connections.remove((self.modules[mod_id][port_id], mod_id))
         self.modules[mod_id][port_id] = None
 
-    def get_graph(self):
+    def _get_graph(self):
         """returns a graph with nodes and edges"""
         graph = nx.Graph()
         graph.add_nodes_from(self.modules.keys())
@@ -105,6 +105,9 @@ class Spacecraft:
 
     def display(self):
         """displays a graph of the modules"""
-        graph = self.get_graph()
+        graph = self._get_graph()
         nx.draw(graph, pos=self.positions, with_labels=True)
         plt.show()
+
+
+    def slide(self, mod_id, 
