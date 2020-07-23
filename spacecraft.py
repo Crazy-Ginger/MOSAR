@@ -4,6 +4,7 @@ import operator as op
 import networkx as nx
 from matplotlib import pyplot as plt
 
+
 class Spacecraft:
     """A generic spacecraft class that contains a dictionary of modules and connections"""
     def __init__(self, dimensions=2):
@@ -70,7 +71,7 @@ class Spacecraft:
         if self.modules[mod_id][port_id] is None:
             raise ValueError("Port %d on module: %s is not connected" %(port_id, mod_id))
 
-        self.modules[self.modules[mod_id][port_id]][(port_id+2)%(self._dimensions*2)] = None
+        self.modules[self.modules[mod_id][port_id]][(port_id+2) % (self._dimensions*2)] = None
 
         try:
             self.connections.remove((mod_id, self.modules[mod_id][port_id]))
@@ -97,9 +98,9 @@ class Spacecraft:
     def _position_get(self, port, mod_id):
         """pass port of unconnected module and id of connected module
         returns position of newly connected module"""
-        if  port in (0, 2):
+        if port in (0, 2):
             position = tuple(map(op.add, self.positions[mod_id], (port-1, 0)))
-        elif  port in (1, 3):
+        elif port in (1, 3):
             position = tuple(map(op.add, self.positions[mod_id], (0, (port-2)*-1)))
         return position
 
@@ -109,5 +110,23 @@ class Spacecraft:
         nx.draw(graph, pos=self.positions, with_labels=True)
         plt.show()
 
+    def get_unconnected_mod(self, root):
+        to_visit = [root]
+        visited = []
+        count = 0
+        while len(to_visit) != 0 and count < 10:
+            current_node = to_visit[0]
+            to_return = True
+            if all(x is None for x in self.modules[current_node]):
+                return current_node, visited
 
-    def slide(self, mod_id, 
+            for child in self.modules[current_node]:
+                if child is not None and child not in visited:
+                    to_visit = [to_visit[0]] + [child] + [to_visit[1:]]
+                    to_return = False
+
+            if to_return is True:
+                return current_node, visited
+            visited.append(current_node)
+            del to_visit[0]
+            count += 1

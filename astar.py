@@ -2,6 +2,7 @@
 # from __future__ import print_function
 import matplotlib.pyplot as plt
 
+
 class AStarGraph():
     """a star graph"""
     #Define a class board like grid with two barriers
@@ -36,11 +37,12 @@ class AStarGraph():
                 return 100 #Extremely high cost to enter barrier squares
         return 1 #Normal movement cost
 
+
 def AStarSearch(start, end, graph):
     G = {} #Actual movement cost to each position from the start position
     F = {} #Estimated movement cost of start to end going via this position
 
-    #Initialize starting values
+    # Initialize starting values
     G[start] = 0
     F[start] = graph.heuristic(start, end)
 
@@ -49,7 +51,7 @@ def AStarSearch(start, end, graph):
     cameFrom = {}
 
     while len(openVertices) > 0:
-        #Get the vertex in the open list with the lowest F score
+        # Get the vertex in the open list with the lowest F score
         current = None
         currentFscore = None
         for pos in openVertices:
@@ -89,6 +91,7 @@ def AStarSearch(start, end, graph):
             F[neighbour] = G[neighbour] + H
 
     raise RuntimeError("A* failed to find a solution")
+
 
 if __name__ == "__main__":
     GRAPH = AStarGraph()

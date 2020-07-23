@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import spacecraft
 
+
 def main():
     """main call function"""
     craft = spacecraft.Spacecraft()
@@ -19,10 +20,12 @@ def main():
     craft.connect("MOS5", 1, "MOS6", 3)
     craft.connect("MOS7", 1, "MOS2", 3)
     craft.connect("MOS3", 2, "MOS5", 0)
-    craft.display()
 
+    # craft.display()
 
-    craft.disconnect("MOS3", 2)
+    print(craft.get_unconnected_mod("MOS1"))
+    craft.disconnect("MOS7", 1)
+    print(craft.get_unconnected_mod("MOS1"))
     craft.display()
 
 
