@@ -1,0 +1,137 @@
+{
+    "py/object": "spacecraft.Spacecraft",
+    "modules": {
+        "MOS1": [
+            null,
+            null,
+            "MOS2",
+            null
+        ],
+        "MOS2": [
+            "MOS1",
+            "MOS3",
+            "MOS4",
+            "MOS7"
+        ],
+        "MOS3": [
+            null,
+            null,
+            "MOS5",
+            "MOS2"
+        ],
+        "MOS4": [
+            "MOS2",
+            "MOS5",
+            null,
+            null
+        ],
+        "MOS5": [
+            "MOS3",
+            "MOS6",
+            null,
+            "MOS4"
+        ],
+        "MOS6": [
+            null,
+            null,
+            null,
+            "MOS5"
+        ],
+        "MOS7": [
+            null,
+            "MOS2",
+            null,
+            null
+        ]
+    },
+    "_dimensions": 2,
+    "root": "MOS1",
+    "connections": [
+        {
+            "py/tuple": [
+                "MOS1",
+                "MOS2"
+            ]
+        },
+        {
+            "py/tuple": [
+                "MOS2",
+                "MOS3"
+            ]
+        },
+        {
+            "py/tuple": [
+                "MOS2",
+                "MOS4"
+            ]
+        },
+        {
+            "py/tuple": [
+                "MOS4",
+                "MOS5"
+            ]
+        },
+        {
+            "py/tuple": [
+                "MOS5",
+                "MOS6"
+            ]
+        },
+        {
+            "py/tuple": [
+                "MOS7",
+                "MOS2"
+            ]
+        },
+        {
+            "py/tuple": [
+                "MOS3",
+                "MOS5"
+            ]
+        }
+    ],
+    "positions": {
+        "MOS1": {
+            "py/tuple": [
+                0,
+                0
+            ]
+        },
+        "MOS2": {
+            "py/tuple": [
+                1,
+                0
+            ]
+        },
+        "MOS3": {
+            "py/tuple": [
+                1,
+                1
+            ]
+        },
+        "MOS4": {
+            "py/tuple": [
+                2,
+                0
+            ]
+        },
+        "MOS5": {
+            "py/tuple": [
+                2,
+                1
+            ]
+        },
+        "MOS6": {
+            "py/tuple": [
+                2,
+                2
+            ]
+        },
+        "MOS7": {
+            "py/tuple": [
+                1,
+                -1
+            ]
+        }
+    }
+}

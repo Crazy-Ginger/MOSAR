@@ -3,6 +3,7 @@
 import operator as op
 import networkx as nx
 from matplotlib import pyplot as plt
+import jsonpickle as pickler
 
 
 class Spacecraft:
@@ -83,16 +84,8 @@ class Spacecraft:
             self.connections.remove((self.modules[mod_id][port_id], mod_id))
         self.modules[mod_id][port_id] = None
 
-    def _get_graph(self):
-        """returns a graph with nodes and edges"""
-        graph = nx.Graph()
-        graph.add_nodes_from(self.modules.keys())
-        if len(self.connections) != 0:
-            graph.add_edges_from(self.connections)
-        return graph
-
     def get_connections(self):
-        """outputs all the connections between all the moduels"""
+        """outputs all the connections between all the modules"""
         output = ""
         for key in self.modules:
             output += key
@@ -112,7 +105,10 @@ class Spacecraft:
 
     def display(self):
         """displays a graph of the modules"""
-        graph = self._get_graph()
+        graph = nx.Graph()
+        graph.add_nodes_from(self.modules.keys())
+        if len(self.connections) != 0:
+            graph.add_edges_from(self.connections)
         nx.draw(graph, pos=self.positions, with_labels=True)
         plt.show()
 
@@ -156,6 +152,24 @@ class Spacecraft:
 
             visited.append(current_node)
             del to_visit[0]
+
+    def import_from_file(self, file_name, goal=True):
+        """pass json file to import design"""
+        with open(file_name, 'r') as file:
+            data = file.read().replace("\n", "")
+        if goal is False:
+            # self = pickler.decode(data)
+            new_craft = pickler.decode(data)
+            print(new_craft)
+            print ("printed ew craft")
+            return new_craft
+        else:
+            self.goal = pickler.decode(data)
+
+    def export_to_file(self, file_name):
+        """export current spacecraft as a json file"""
+        write_file = open(file_name+".json", "w")
+        write_file.write(pickler.encode(self))
 
     def melt(self):
         """Places all modules in a line"""
@@ -209,3 +223,7 @@ class Spacecraft:
             moved.append(current_node)
             to_move.remove(current_node)
             root = current_node
+
+    def sort(self):
+        """sorts the chain of modules """
+
