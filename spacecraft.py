@@ -30,7 +30,7 @@ class Spacecraft:
         self.connect(a_id, b_id, a_port, b_port)
 
     def connect(self, mod_a, mod_a_port, mod_b, mod_b_port):
-        """Connects the 2 passed moduleswith the specified ports
+        """Connects the 2 passed modules with the specified ports
         as orientation is going to be considered in future code it takes both ports"""
         mod_a = str(mod_a)
         mod_b = str(mod_b)
@@ -46,19 +46,20 @@ class Spacecraft:
         # checks that the ports are not already in use
         try:
             if self.modules[mod_a][mod_a_port] is not None:
-                raise ValueError("The port %d on module A is already in use" %(mod_a_port))
+                raise ValueError("The port %d on module A is already in use" % (mod_a_port))
             if self.modules[mod_b][mod_b_port] is not None:
-                raise ValueError("The port %d on module B is already in use" %(mod_b_port))
+                raise ValueError("The port %d on module B is already in use" % (mod_b_port))
         except IndexError:
             raise IndexError("That port number does not exist in this dimension")
 
+        # give postitions to connected module
         if (mod_a in self.positions) and (mod_b in self.positions):
             if abs(sum(tuple(map(op.sub, self.positions[mod_a], self.positions[mod_b])))) != 1:
-                raise KeyError("Modules %s, %s cannot be connected" %(mod_a, mod_b))
+                raise KeyError("Modules %s, %s cannot be connected" % (mod_a, mod_b))
         elif mod_a in self.positions:
-            self.positions[str(mod_b)] = self._position_get(mod_a_port, mod_a)
+            self.positions[str(mod_b)] = self._position_get(mod_a, mod_a_port)
         elif mod_b in self.positions:
-            self.positions[str(mod_a)] = self._position_get(mod_b_port, mod_b)
+            self.positions[str(mod_a)] = self._position_get(mod_b, mod_b_port)
 
         self.modules[mod_a][mod_a_port] = mod_b
         self.modules[mod_b][mod_b_port] = mod_a
@@ -69,10 +70,13 @@ class Spacecraft:
         mod_id = str(mod_id)
         port_id = int(port_id)
         if self.modules[mod_id][port_id] is None:
-            raise ValueError("Port %d on module: %s is not connected" %(port_id, mod_id))
+            # will now just accept to allow for bath disconnects
+            # raise ValueError("Port %d on module: %s is not connected" % (port_id, mod_id))
+            return
 
         self.modules[self.modules[mod_id][port_id]][(port_id+2) % (self._dimensions*2)] = None
 
+        # Removes it from the list of connections
         try:
             self.connections.remove((mod_id, self.modules[mod_id][port_id]))
         except ValueError:
@@ -95,13 +99,15 @@ class Spacecraft:
             output += str(self.modules[key]) + "\n"
         print(output)
 
-    def _position_get(self, port, mod_id):
+    def _position_get(self, mod_id, port):
         """pass port of unconnected module and id of connected module
         returns position of newly connected module"""
         if port in (0, 2):
             position = tuple(map(op.add, self.positions[mod_id], (port-1, 0)))
         elif port in (1, 3):
             position = tuple(map(op.add, self.positions[mod_id], (0, (port-2)*-1)))
+        else:
+            print(mod_id, "\t", port)
         return position
 
     def display(self):
@@ -110,11 +116,11 @@ class Spacecraft:
         nx.draw(graph, pos=self.positions, with_labels=True)
         plt.show()
 
-    def get_unconnected_mod(self, root):
+    def get_isolated_mod(self, root):
+        """gets unconnected module from root and path from root to it"""
         to_visit = [root]
         visited = []
-        count = 0
-        while len(to_visit) != 0 and count < 10:
+        while len(to_visit) != 0:
             current_node = to_visit[0]
             to_return = True
             if all(x is None for x in self.modules[current_node]):
@@ -122,11 +128,84 @@ class Spacecraft:
 
             for child in self.modules[current_node]:
                 if child is not None and child not in visited:
-                    to_visit = [to_visit[0]] + [child] + [to_visit[1:]]
+                    to_visit = [child] + [to_visit[1:]]
                     to_return = False
 
             if to_return is True:
                 return current_node, visited
             visited.append(current_node)
+
+    def __remove_extra_connections__(self, root):
+        """ABANDONED FOR NOW
+        uses BFS to remove unnecesaary connections"""
+        to_visit = [root]
+        visited = []
+        while len(to_visit) != 0:
+            current_node = to_visit[0]
+            if all(x is None for x in self.modules[current_node]):
+                continue
+            for child in self.modules[current_node]:
+                if child is None:
+                    continue
+                elif child in visited:
+                    print(child)
+                    print(self.modules[current_node])
+                    self.disconnect(current_node, self.modules[current_node].index(child))
+                elif child not in visited:
+                    to_visit.append(child)
+
+            visited.append(current_node)
             del to_visit[0]
-            count += 1
+
+    def melt(self):
+        """Places all modules in a line"""
+        # get most extreme module
+        root, dump_path = self.get_isolated_mod(self.root)
+
+        # find coords of free space next to root
+        broke = False
+        for i in range(2*self._dimensions):
+            if i % 2 == 0:
+                int_diff = 1
+            else:
+                int_diff = -1
+            # get a tuple with +/-1 in one dimension to test free space round root
+            difference = [0]*self._dimensions
+            difference[i % self._dimensions] = int_diff
+            difference = tuple(difference)
+            destination = sum(tuple(map(op.add, self.positions[root], difference)))
+            if destination not in self.positions:
+                broke = True
+                break
+        if broke is False:
+            raise ValueError("Did not find a free port around root: %s" % (root))
+
+        # moves all modules into chain
+        moved = []
+        to_move = set(self.modules.keys())
+
+        while len(to_move) != 0:
+            current_node, current_path = self.get_isolated_mod(root)
+            # the path can be used to get real world coordinates
+            # use this to move module (when set up morse)
+
+            # disconnect the module and move it
+            for port_id in range(len(self.modules[current_node])):
+                self.disconnect(current_node, port_id)
+            self.positions[current_node] = tuple(map(op.add, self.positions[root], difference))
+
+            # connect module to chain
+            if sum(difference) == 1:
+                for i in range(len(difference)):
+                    if difference[i] != 0:
+                        axis = i
+            else:
+                for i in range(len(difference)):
+                    if difference[i] != 0:
+                        axis = i + 3
+            axis_to_port = [[2, 1, 4, 0, 3, 5],
+                            [0, 3, 5, 2, 1, 4]]
+            self.connect(current_node, axis_to_port[0][axis], root, axis_to_port[1][axis])
+            moved.append(current_node)
+            to_move.remove(current_node)
+            root = current_node

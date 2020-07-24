@@ -21,11 +21,14 @@ def main():
     craft.connect("MOS7", 1, "MOS2", 3)
     craft.connect("MOS3", 2, "MOS5", 0)
 
-    # craft.display()
+    craft.display()
 
-    print(craft.get_unconnected_mod("MOS1"))
-    craft.disconnect("MOS7", 1)
-    print(craft.get_unconnected_mod("MOS1"))
+    # print(craft.get_isolated_mod("MOS1"))
+    # craft.disconnect("MOS7", 1)
+    # print(craft.get_isolated_mod("MOS1"))
+    # craft.display()
+    # craft.remove_extra_connections("MOS1")
+    craft.melt()
     craft.display()
 
 
