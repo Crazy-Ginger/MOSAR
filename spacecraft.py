@@ -14,6 +14,7 @@ class Spacecraft:
         self.root = None
         self.connections = []
         self.positions = {}
+        self.goal = None
 
     def add_module(self, new_id):
         """Add an unconnected module to the craft dictionary"""
@@ -226,4 +227,6 @@ class Spacecraft:
 
     def sort(self):
         """sorts the chain of modules """
-
+        if self.goal is None:
+            raise TypeError("goal is not set and therefore cannot be achieved")
+        
