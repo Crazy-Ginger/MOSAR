@@ -11,7 +11,6 @@ class Spacecraft:
     def __init__(self, dimensions=2):
         self.modules = {}
         self._dimensions = dimensions
-        self.root = None
         self.connections = []
         self.positions = {}
         self.goal = None
@@ -25,7 +24,7 @@ class Spacecraft:
 
     def add_connected_module(self, a_id, b_id, a_port, b_port):
         """Adds a module that is connected and modifies the existing module to connect it"""
-        if self.root is None:
+        if not self.modules:
             raise KeyError("There are no existing modules to connect to")
 
         self.modules[str(a_id)] = [None]*(self._dimensions*2)
@@ -172,10 +171,20 @@ class Spacecraft:
         write_file = open(file_name+".json", "w")
         write_file.write(pickler.encode(self))
 
-    def melt(self):
+    def melt(self, root=None):
         """Places all modules in a line"""
-        # get most extreme module
-        root, dump_path = self.get_isolated_mod(self.root)
+        # get most extreme module or check passed module
+        if root is None:
+            root, dump_path = self.get_isolated_mod(next(iter(self.modules)))
+        else:
+            if root not in self.modules:
+                raise ValueError("%s is not a valid module" % (root))
+            good_root = False
+            for port in self.modules[root]:
+                if port is None:
+                    good_root = True
+            if good_root is False:
+                raise ValueError("%s is not a valid root" % (root))
 
         # find coords of free space next to root
         broke = False
@@ -225,8 +234,26 @@ class Spacecraft:
             to_move.remove(current_node)
             root = current_node
 
+    def _get_goal_order(self):
+        """return the goal order using bfs"""
+        root = next(iter(self.goal.modules))
+        to_visit = [root]
+        visited = []
+
+        while len(to_visit) != 0:
+            current_node = to_visit[0]
+
+            for child in self.goal.modules[current_node]:
+                if child is not None and child not in visited:
+                    to_visit.append(child)
+
+            visited.append(current_node)
+            to_visit = to_visit[1:]
+        return visited
+
     def sort(self):
         """sorts the chain of modules """
         if self.goal is None:
             raise TypeError("goal is not set and therefore cannot be achieved")
-        
+        goal_order = self._get_goal_order()
+
