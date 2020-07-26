@@ -17,10 +17,9 @@ class Spacecraft:
 
     def add_module(self, new_id):
         """Add an unconnected module to the craft dictionary"""
-        self.modules[str(new_id)] = [None]*(self._dimensions*2)
-        if self.root is None:
-            self.root = str(new_id)
+        if not self.modules:
             self.positions[str(new_id)] = (0, 0)
+        self.modules[str(new_id)] = [None]*(self._dimensions*2)
 
     def add_connected_module(self, a_id, b_id, a_port, b_port):
         """Adds a module that is connected and modifies the existing module to connect it"""
@@ -241,14 +240,16 @@ class Spacecraft:
         visited = []
 
         while len(to_visit) != 0:
+            print(to_visit, "\t", visited)
             current_node = to_visit[0]
 
             for child in self.goal.modules[current_node]:
+                # broken?
                 if child is not None and child not in visited:
                     to_visit.append(child)
 
             visited.append(current_node)
-            to_visit = to_visit[1:]
+            to_visit.pop(0)
         return visited
 
     def sort(self):
