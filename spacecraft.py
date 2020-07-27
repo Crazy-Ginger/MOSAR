@@ -113,6 +113,8 @@ class Spacecraft:
 
     def get_isolated_mod(self, root):
         """gets unconnected module from root and path from root to it"""
+
+        # rewrite to use BFS to increase speed
         to_visit = [root]
         visited = []
         while len(to_visit) != 0:
