@@ -6,8 +6,10 @@ def main():
     """main call function"""
     craft = Spacecraft()
     craft = craft.import_from_file("test.json", goal=False)
-    craft.display()
-    craft.goal.display()
+    # craft.display()
+    # craft.goal.display()
+    order = craft.melt()
+    craft.sort(order)
 
 
 if __name__ == "__main__":

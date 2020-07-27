@@ -278,6 +278,10 @@ class Spacecraft:
             del start_order[index]
         print(current_order)
         print(final_places)
+        print(goal_order)
+
+        for i in range(len(current_order) /2):
+
 
     def grow(self):
         return None
