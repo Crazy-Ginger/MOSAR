@@ -153,14 +153,12 @@ class Spacecraft:
             del to_visit[0]
 
     def import_from_file(self, file_name, goal=True):
-        """pass json file to import design"""
+        """pass json file to import design (have to redifine craft if importing)"""
         with open(file_name, 'r') as file:
             data = file.read().replace("\n", "")
+
         if goal is False:
-            # self = pickler.decode(data)
             new_craft = pickler.decode(data)
-            print(new_craft)
-            print ("printed ew craft")
             return new_craft
         else:
             self.goal = pickler.decode(data)
@@ -232,6 +230,7 @@ class Spacecraft:
             moved.append(current_node)
             to_move.remove(current_node)
             root = current_node
+        return moved
 
     def _get_goal_order(self):
         """return the goal order using bfs"""
@@ -239,22 +238,46 @@ class Spacecraft:
         to_visit = [root]
         visited = []
 
-        while len(to_visit) != 0:
-            print(to_visit, "\t", visited)
+        while to_visit:
             current_node = to_visit[0]
+            visited.append(current_node)
 
             for child in self.goal.modules[current_node]:
                 # broken?
-                if child is not None and child not in visited:
+                if child is not None and child not in to_visit and child not in visited:
                     to_visit.append(child)
 
-            visited.append(current_node)
             to_visit.pop(0)
         return visited
 
-    def sort(self):
-        """sorts the chain of modules """
+    def sort(self, start_order, identifier=3):
+        """sorts the chain of modules"""
         if self.goal is None:
             raise TypeError("goal is not set and therefore cannot be achieved")
-        goal_order = self._get_goal_order()
 
+        # get order for goal then take only module types
+        goal_order = self._get_goal_order()
+        goal_order = [elem[-identifier:] for elem in goal_order]
+
+        current_order = []
+        final_places = {}
+
+        if len(goal_order) != len(start_order):
+            # handle this (write later)
+            raise ValueError("Goal and spacecraft contain different number of modules")
+
+        # finds where each module type need to be moved
+        # creates a list of current order (to be split) and a dictionary with the final positions
+        for pos in range(len(goal_order)):
+            try:
+                index = [idx for idx, s in enumerate(start_order) if goal_order[pos] in s][0]
+            except IndexError:
+                raise IndexError("%s doesn't exist in craft" % (goal_order[pos]))
+            final_places[start_order[index]] = pos
+            current_order.append(start_order[index])
+            del start_order[index]
+        print(current_order)
+        print(final_places)
+
+    def grow(self):
+        return None
