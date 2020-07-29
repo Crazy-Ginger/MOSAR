@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """ shut up error"""
 import operator as op
+
+import jsonpickle as pickler
 import networkx as nx
 from matplotlib import pyplot as plt
-import jsonpickle as pickler
 
 
 class Spacecraft:
@@ -82,6 +83,12 @@ class Spacecraft:
         except ValueError:
             self.connections.remove((self.modules[mod_id][port_id], mod_id))
         self.modules[mod_id][port_id] = None
+
+    def disconnect_all(self, mod_id):
+        """disconnects module from all connections"""
+        # add a way to avoid disconnect from arm/tug
+        for port_id in range(len(self.modules[mod_id])):
+            self.disconnect(mod_id, port_id)
 
     def get_connections(self):
         """outputs all the connections between all the modules"""
@@ -213,8 +220,7 @@ class Spacecraft:
             # use this to move module (when set up morse)
 
             # disconnect the module and move it
-            for port_id in range(len(self.modules[current_node])):
-                self.disconnect(current_node, port_id)
+            self.disconnect_all(current_node)
             self.positions[current_node] = tuple(map(op.add, self.positions[root], difference))
 
             # connect module to chain
@@ -261,7 +267,7 @@ class Spacecraft:
         goal_order = self._get_goal_order()
         goal_order = [elem[-identifier:] for elem in goal_order]
 
-        current_order = []
+        current_order = [[]]*2
         final_places = {}
 
         if len(goal_order) != len(start_order):
@@ -276,14 +282,25 @@ class Spacecraft:
             except IndexError:
                 raise IndexError("%s doesn't exist in craft" % (goal_order[pos]))
             final_places[start_order[index]] = pos
-            current_order.append(start_order[index])
+            current_order[0].append(start_order[index])
             del start_order[index]
-        print(current_order)
-        print(final_places)
-        print(goal_order)
 
-        for i in range(len(current_order) /2):
+        axis_to_port = [[2, 1, 4, 0, 3, 5],
+                        [0, 3, 5, 2, 1, 4]]
+        # find unoccupied dimension
+        for port_id in range(len(self.modules[current_order[0][0]])):
+            if self.modules[current_order[0][0]][port_id] is not None:
+                occupied = port_id
+                break
 
+        lower_port = axis_to_port[0][(occupied+1) % 3]
+        for i in range(len(current_order[0]) // 2):
+            current_order[1].append(current_order[0][i])
+            self.disconnect_all(current_order[0][i])
+            self.connect(current_order[0][i], lower_port, current_order[0][-i], axis_to_port[1][lower_port])
+
+        # removes from of row as it has been moved to below
+        del current_order[0][:len(current_order[0])//2]
 
     def grow(self):
         return None

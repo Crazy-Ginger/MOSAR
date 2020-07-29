@@ -1,6 +1,6 @@
 import logging; logger = logging.getLogger("morserobots." + __name__)
 
-from morse.builder import Robot, GroundRobot, WheeledRobot
+from morse.builder import GroundRobot, Robot, WheeledRobot
 
 
 class CubeModule(Robot):

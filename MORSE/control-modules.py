@@ -1,7 +1,8 @@
 #!/usr/local/bin/python3.5
 
-import time
 import math
+import time
+
 import pymorse
 
 numModules = 16

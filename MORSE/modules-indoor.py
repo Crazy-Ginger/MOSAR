@@ -8,8 +8,10 @@ Created on Jun  18 18:18:18 2020
 
 numModules = 16
 
-from morse.builder import *
 from math import pi
+
+from morse.builder import *
+
 #import CubeModule
 
 #Create Modules
