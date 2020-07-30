@@ -14,7 +14,7 @@ class Spacecraft:
         self._dimensions = dimensions
         self.connections = []
         self.positions = {}
-        self.goal = None
+        self.goal = Noneza
 
     def add_module(self, new_id):
         """Add an unconnected module to the craft dictionary"""
@@ -47,9 +47,9 @@ class Spacecraft:
         # checks that the ports are not already in use
         try:
             if self.modules[mod_a][mod_a_port] is not None:
-                raise ValueError("The port %d on module A is already in use" % (mod_a_port))
+                raise ValueError("The port %d on %s is already in use" % (mod_a_port, mod_a))
             if self.modules[mod_b][mod_b_port] is not None:
-                raise ValueError("The port %d on module B is already in use" % (mod_b_port))
+                raise ValueError("The port %d on %s is already in use" % (mod_b_port, mod_b))
         except IndexError:
             raise IndexError("That port number does not exist in this dimension")
 
@@ -66,6 +66,27 @@ class Spacecraft:
         self.modules[mod_b][mod_b_port] = mod_a
         self.connections.append((mod_a, mod_b))
 
+    def connect_all(self, mod_id):
+        """give a mod id, checks all adjacent positions and connects module to
+        adjancent modules"""
+        if mod_id not in self.positions:
+            raise IndexError("%s does not have a position so it not yet connected" % (mod_id))
+
+        for i in range(2 * self._dimensions):
+            if i % 2 == 0:
+                int_diff = 1
+            else:
+                int_diff = -1
+            # get a tuple with +/-1 in one dimension to test free space round root
+            difference = [0]*self._dimensions
+            difference[i % self._dimensions] = int_diff
+            difference = tuple(difference)
+            destination = sum(tuple(map(op.add, self.positions[root], difference)))
+            for key, value in self.positions.items():
+                if value == destination:
+                    self.connect(mod_id, , key, )
+
+
     def disconnect(self, mod_id, port_id):
         """takes a module id and port number and disconnects that port"""
         mod_id = str(mod_id)
@@ -74,7 +95,7 @@ class Spacecraft:
             # will now just accept to allow for bath disconnects
             # raise ValueError("Port %d on module: %s is not connected" % (port_id, mod_id))
             return
-
+        # disconnects port on other module
         self.modules[self.modules[mod_id][port_id]][(port_id+2) % (self._dimensions*2)] = None
 
         # Removes it from the list of connections
@@ -89,6 +110,8 @@ class Spacecraft:
         # add a way to avoid disconnect from arm/tug
         for port_id in range(len(self.modules[mod_id])):
             self.disconnect(mod_id, port_id)
+        # remove position for module so it can be repositioned
+        del self.positions[mod_id]
 
     def get_connections(self):
         """outputs all the connections between all the modules"""
@@ -258,7 +281,7 @@ class Spacecraft:
             to_visit.pop(0)
         return visited
 
-    def sort(self, start_order, identifier=3):
+    def sort(self, current_order, identifier=3):
         """sorts the chain of modules"""
         if self.goal is None:
             raise TypeError("goal is not set and therefore cannot be achieved")
@@ -267,10 +290,9 @@ class Spacecraft:
         goal_order = self._get_goal_order()
         goal_order = [elem[-identifier:] for elem in goal_order]
 
-        current_order = [[]]*2
         final_places = {}
 
-        if len(goal_order) != len(start_order):
+        if len(goal_order) != len(current_order):
             # handle this (write later)
             raise ValueError("Goal and spacecraft contain different number of modules")
 
@@ -278,29 +300,39 @@ class Spacecraft:
         # creates a list of current order (to be split) and a dictionary with the final positions
         for pos in range(len(goal_order)):
             try:
-                index = [idx for idx, s in enumerate(start_order) if goal_order[pos] in s][0]
+                index = [idx for idx, s in enumerate(current_order) if goal_order[pos] in s][0]
             except IndexError:
                 raise IndexError("%s doesn't exist in craft" % (goal_order[pos]))
-            final_places[start_order[index]] = pos
-            current_order[0].append(start_order[index])
-            del start_order[index]
-
+            final_places[current_order[index]] = pos
         axis_to_port = [[2, 1, 4, 0, 3, 5],
                         [0, 3, 5, 2, 1, 4]]
-        # find unoccupied dimension
-        for port_id in range(len(self.modules[current_order[0][0]])):
-            if self.modules[current_order[0][0]][port_id] is not None:
+
+        # find unoccupied dimension and sets the port to use
+        for port_id in range(len(self.modules[current_order[0]])):
+            if self.modules[current_order[0]][port_id] is not None:
                 occupied = port_id
                 break
-
         lower_port = axis_to_port[0][(occupied+1) % 3]
-        for i in range(len(current_order[0]) // 2):
-            current_order[1].append(current_order[0][i])
-            self.disconnect_all(current_order[0][i])
-            self.connect(current_order[0][i], lower_port, current_order[0][-i], axis_to_port[1][lower_port])
 
+        current_order = [current_order]
+        # splits the row in 2
+        tmp_order = []
+        for i in range(len(current_order[0]) // 2):
+            tmp_order.append(current_order[0][i])
+            self.disconnect_all(current_order[0][i])
+            self.connect(current_order[0][i], lower_port, current_order[0][(-i-1)], axis_to_port[1][lower_port])
+
+        current_order.append(tmp_order)
         # removes from of row as it has been moved to below
         del current_order[0][:len(current_order[0])//2]
+
+        # if sub-modules work could replace so arm just turns the modules over
+        for sub_list in current_order:
+            for i in range(len(sub_list-1)):
+                for j in range(0, len(sub_list-i-1)):
+                    if final_places[sub_list[j]] > final_places[sub_list[j+1]]:
+                        self.disconnect_all(sub_list[j+1])
+                        self.connect(sub_list[j], 
 
     def grow(self):
         return None
