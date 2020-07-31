@@ -315,21 +315,21 @@ class Spacecraft:
                 raise IndexError("%s doesn't exist in craft" % (goal_order[pos]))
             final_places[tmp_order[index]] = pos
             del tmp_order[index]
-        axis_to_port = [[2, 1, 4, 0, 3, 5],
-                        [0, 3, 5, 2, 1, 4]]
 
         # find unoccupied dimension and sets the port to use
-        for port_id in range(len(self.modules[current_order[0]])):
-            if self.modules[current_order[0]][port_id] is not None:
+        for port_id in range(len(self.modules[current_order[len(current_order)//2]])):
+            if self.modules[current_order[len(current_order)//2]][port_id] is not None:
                 occupied = port_id
                 break
+        axis_to_port = [[2, 1, 4, 0, 3, 5],
+                        [0, 3, 5, 2, 1, 4]]
         lower_port = axis_to_port[0][(occupied+1) % self._dimensions]
 
         current_order = [current_order]
         # splits the row in 2
         tmp_order = []
         for i in range(len(current_order[0]) // 2):
-            tmp_order.append(current_order[0][i])
+            tmp_order.insert(0, current_order[0][i])
             self.disconnect_all(current_order[0][i])
             self.connect(current_order[0][i], lower_port, current_order[0][(-i-1)], axis_to_port[1][lower_port])
             self.connect_all(current_order[0][i])
@@ -340,7 +340,6 @@ class Spacecraft:
 
         # if sub-modules work could replace so arm just turns the modules over
         for sub_list in current_order:
-            print(sub_list)
             for i in range(len(sub_list)-1):
                 for j in range(0, len(sub_list)-i-1):
                     if final_places[sub_list[j]] > final_places[sub_list[j+1]]:
@@ -350,16 +349,55 @@ class Spacecraft:
                         self.disconnect_all(sub_list[j])
                         self.positions[sub_list[j]], self.positions[sub_list[j+1]] = pos2, pos1
                         # this will need rewriting for morse
-                        self.connect_all(sub_list[j])
-                        self.connect_all(sub_list[j+1])
+                        # connect_all doesn't seem to work here
+                        # self.connect_all(sub_list[j+1])
+                        # self.connect_all(sub_list[j])
                         sub_list[j], sub_list[j+1] = sub_list[j+1], sub_list[j]
 
         # connect structure together
+        # implement get_path(start, end) to allow for easy traversal
         for key in self.modules:
             self.connect_all(key)
 
         # merge sorted rows
+        if final_places[current_order[0][0]] < final_places[current_order[1][0]]:
+            root = current_order[0][0]
+            del current_order[0][0]
+        else:
+            root = current_order[1][0]
+            del current_order[1][0]
 
+        if final_places[current_order[0][-1]] > final_places[current_order[1][-1]]:
+            self.disconnect_all(root)
+            self.connect(current_order[0][-1], 2, root, 0)
+        else:
+            self.disconnect_all(root)
+            self.connect(current_order[1][-1], 2, root, 0)
+        final_order = [root]
+        while len(current_order[0]) > 0 and len(current_order[1]) > 0:
+            if final_places[current_order[0][0]] < final_places[current_order[1][0]]:
+                self.disconnect_all(current_order[0][0])
+                self.connect(root, 2, current_order[0][0], 0)
+                root = current_order[0][0]
+                del current_order[0][0]
+                final_order.append(root)
+            else:
+                self.disconnect_all(current_order[1][0])
+                self.connect(root, 2, current_order[1][0], 0)
+                root = current_order[1][0]
+                del current_order[1][0]
+                final_order.append(root)
+        for mod in current_order[0]:
+            self.disconnect_all(mod)
+            self.connect(root, 2, mod, 0)
+            root = mod
+            final_order.append(root)
+        for mod in current_order[1]:
+            self.disconnect_all(mod)
+            self.connect(root, 2, mod, 0)
+            root = mod
+            final_order.append(root)
+        return final_order
 
     def grow(self):
         return None
