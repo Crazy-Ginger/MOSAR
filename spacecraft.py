@@ -14,7 +14,7 @@ class Spacecraft:
         self._dimensions = dimensions
         self.connections = []
         self.positions = {}
-        self.goal = Noneza
+        self.goal = None
 
     def add_module(self, new_id):
         """Add an unconnected module to the craft dictionary"""
@@ -81,11 +81,21 @@ class Spacecraft:
             difference = [0]*self._dimensions
             difference[i % self._dimensions] = int_diff
             difference = tuple(difference)
-            destination = sum(tuple(map(op.add, self.positions[root], difference)))
+            destination = tuple(map(op.add, self.positions[mod_id], difference))
             for key, value in self.positions.items():
-                if value == destination:
-                    self.connect(mod_id, , key, )
-
+                if value == destination and key not in self.modules[mod_id]:
+                    if sum(difference) == 1:
+                        for i in range(len(difference)):
+                            if difference[i] != 0:
+                                axis = i
+                    else:
+                        for i in range(len(difference)):
+                            if difference[i] != 0:
+                                axis = i + 3
+                    axis_to_port = [[2, 1, 4, 0, 3, 5],
+                                    [0, 3, 5, 2, 1, 4]]
+                    # connect module to chain
+                    self.connect(mod_id, axis_to_port[0][axis], key, axis_to_port[1][axis])
 
     def disconnect(self, mod_id, port_id):
         """takes a module id and port number and disconnects that port"""
@@ -245,8 +255,7 @@ class Spacecraft:
             # disconnect the module and move it
             self.disconnect_all(current_node)
             self.positions[current_node] = tuple(map(op.add, self.positions[root], difference))
-
-            # connect module to chain
+            # get the ports to connect
             if sum(difference) == 1:
                 for i in range(len(difference)):
                     if difference[i] != 0:
@@ -257,6 +266,7 @@ class Spacecraft:
                         axis = i + 3
             axis_to_port = [[2, 1, 4, 0, 3, 5],
                             [0, 3, 5, 2, 1, 4]]
+            # connect module to chain
             self.connect(current_node, axis_to_port[0][axis], root, axis_to_port[1][axis])
             moved.append(current_node)
             to_move.remove(current_node)
@@ -296,14 +306,15 @@ class Spacecraft:
             # handle this (write later)
             raise ValueError("Goal and spacecraft contain different number of modules")
 
+        tmp_order = current_order.copy()
         # finds where each module type need to be moved
-        # creates a list of current order (to be split) and a dictionary with the final positions
         for pos in range(len(goal_order)):
             try:
-                index = [idx for idx, s in enumerate(current_order) if goal_order[pos] in s][0]
+                index = [idx for idx, s in enumerate(tmp_order) if goal_order[pos] in s][0]
             except IndexError:
                 raise IndexError("%s doesn't exist in craft" % (goal_order[pos]))
-            final_places[current_order[index]] = pos
+            final_places[tmp_order[index]] = pos
+            del tmp_order[index]
         axis_to_port = [[2, 1, 4, 0, 3, 5],
                         [0, 3, 5, 2, 1, 4]]
 
@@ -312,7 +323,7 @@ class Spacecraft:
             if self.modules[current_order[0]][port_id] is not None:
                 occupied = port_id
                 break
-        lower_port = axis_to_port[0][(occupied+1) % 3]
+        lower_port = axis_to_port[0][(occupied+1) % self._dimensions]
 
         current_order = [current_order]
         # splits the row in 2
@@ -321,6 +332,7 @@ class Spacecraft:
             tmp_order.append(current_order[0][i])
             self.disconnect_all(current_order[0][i])
             self.connect(current_order[0][i], lower_port, current_order[0][(-i-1)], axis_to_port[1][lower_port])
+            self.connect_all(current_order[0][i])
 
         current_order.append(tmp_order)
         # removes from of row as it has been moved to below
@@ -328,11 +340,26 @@ class Spacecraft:
 
         # if sub-modules work could replace so arm just turns the modules over
         for sub_list in current_order:
-            for i in range(len(sub_list-1)):
-                for j in range(0, len(sub_list-i-1)):
+            print(sub_list)
+            for i in range(len(sub_list)-1):
+                for j in range(0, len(sub_list)-i-1):
                     if final_places[sub_list[j]] > final_places[sub_list[j+1]]:
+                        pos1 = self.positions[sub_list[j]]
+                        pos2 = self.positions[sub_list[j+1]]
                         self.disconnect_all(sub_list[j+1])
-                        self.connect(sub_list[j], 
+                        self.disconnect_all(sub_list[j])
+                        self.positions[sub_list[j]], self.positions[sub_list[j+1]] = pos2, pos1
+                        # this will need rewriting for morse
+                        self.connect_all(sub_list[j])
+                        self.connect_all(sub_list[j+1])
+                        sub_list[j], sub_list[j+1] = sub_list[j+1], sub_list[j]
+
+        # connect structure together
+        for key in self.modules:
+            self.connect_all(key)
+
+        # merge sorted rows
+
 
     def grow(self):
         return None
