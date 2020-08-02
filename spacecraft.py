@@ -9,12 +9,13 @@ from matplotlib import pyplot as plt
 
 class Spacecraft:
     """A generic spacecraft class that contains a dictionary of modules and connections"""
-    def __init__(self, dimensions=2):
+    def __init__(self, dimensions=2, mod_type=3):
         self.modules = {}
         self._dimensions = dimensions
         self.connections = []
         self.positions = {}
         self.goal = None
+        self._mod_type = mod_type
 
     def add_module(self, new_id):
         """Add an unconnected module to the craft dictionary"""
@@ -48,10 +49,15 @@ class Spacecraft:
         try:
             if self.modules[mod_a][mod_a_port] is not None:
                 raise ValueError("The port %d on %s is already in use" % (mod_a_port, mod_a))
+
+        except IndexError:
+            raise IndexError("Port %d does not exist in this dimension" % (mod_a_port))
+
+        try:
             if self.modules[mod_b][mod_b_port] is not None:
                 raise ValueError("The port %d on %s is already in use" % (mod_b_port, mod_b))
         except IndexError:
-            raise IndexError("That port number does not exist in this dimension")
+            raise IndexError("Port %d does not exist in this dimension" % (mod_b_port))
 
         # give postitions to connected module
         if (mod_a in self.positions) and (mod_b in self.positions):
@@ -154,7 +160,7 @@ class Spacecraft:
     def get_isolated_mod(self, root):
         """gets unconnected module from root and path from root to it"""
 
-        # rewrite to use BFS to increase speed
+        # uses DFS instead of BFS (change at some point)
         to_visit = [root]
         visited = []
         while len(to_visit) != 0:
@@ -172,27 +178,66 @@ class Spacecraft:
                 return current_node, visited
             visited.append(current_node)
 
-    def __remove_extra_connections__(self, root):
-        """ABANDONED FOR NOW
-        uses BFS to remove unnecesaary connections"""
+    def _get_goal_order(self):
+        """return the goal order using bfs"""
+        root, dump = self.goal.get_isolated_mod(next(iter(self.goal.modules)))
         to_visit = [root]
         visited = []
-        while len(to_visit) != 0:
+
+        while to_visit:
             current_node = to_visit[0]
-            if all(x is None for x in self.modules[current_node]):
-                continue
-            for child in self.modules[current_node]:
-                if child is None:
-                    continue
-                elif child in visited:
-                    print(child)
-                    print(self.modules[current_node])
-                    self.disconnect(current_node, self.modules[current_node].index(child))
-                elif child not in visited:
+            visited.append(current_node)
+
+            for child in self.goal.modules[current_node]:
+                # broken?
+                if child is not None and child not in to_visit and child not in visited:
                     to_visit.append(child)
 
-            visited.append(current_node)
-            del to_visit[0]
+            to_visit.pop(0)
+        return visited
+
+    def get_path(self, root, goal):
+        """pass root mod_id and goal mod_id"""
+        to_visit = {root}
+        est_cost = {root: 0}
+        final_cost = {}
+        visited = set()
+        back_track = {}
+        while to_visit:
+            current_node = None
+            current_score = None
+            for mod in to_visit:
+                if current_node is None or est_cost[mod] < current_score:
+                    current_node = mod
+                    current_score = est_cost[mod]
+            # and current_node[-self._mod_type-1] != "-"
+            # checks if reached goal
+            if current_node == goal:
+                path = [current_node]
+                while current_node in back_track:
+                    current_node = back_track[current_node]
+                    path.append(current_node)
+                # if goal[-self._mod_type:] == path[0][-self._mod_type:]:
+                    # del path[0]
+                path.reverse()
+                # key = current_node
+                # self.goal.modules[key.replace("_", "-")] = self.goal.modules.pop(current_node)
+                return path
+
+            to_visit.remove(current_node)
+            visited.add(current_node)
+
+            for neighbour in self.goal.modules[current_node]:
+                if neighbour in visited:
+                    continue
+                tmp_cost = est_cost[current_node] + 1
+                if neighbour not in to_visit:
+                    to_visit.add(neighbour)
+                elif tmp_cost >= final_cost[neighbour]:
+                    continue
+                back_track[neighbour] = current_node
+                final_cost[neighbour] = tmp_cost
+                est_cost[neighbour] = final_cost[neighbour] + 1
 
     def import_from_file(self, file_name, goal=True):
         """pass json file to import design (have to redifine craft if importing)"""
@@ -201,6 +246,10 @@ class Spacecraft:
 
         if goal is False:
             new_craft = pickler.decode(data)
+            try:
+                new_craft._mod_type
+            except AttributeError:
+                new_craft._mod_type = 3
             return new_craft
         else:
             self.goal = pickler.decode(data)
@@ -273,32 +322,14 @@ class Spacecraft:
             root = current_node
         return moved
 
-    def _get_goal_order(self):
-        """return the goal order using bfs"""
-        root = next(iter(self.goal.modules))
-        to_visit = [root]
-        visited = []
-
-        while to_visit:
-            current_node = to_visit[0]
-            visited.append(current_node)
-
-            for child in self.goal.modules[current_node]:
-                # broken?
-                if child is not None and child not in to_visit and child not in visited:
-                    to_visit.append(child)
-
-            to_visit.pop(0)
-        return visited
-
-    def sort(self, current_order, identifier=3):
+    def sort(self, current_order):
         """sorts the chain of modules"""
         if self.goal is None:
             raise TypeError("goal is not set and therefore cannot be achieved")
 
         # get order for goal then take only module types
         goal_order = self._get_goal_order()
-        goal_order = [elem[-identifier:] for elem in goal_order]
+        goal_order = [elem[-self._mod_type:] for elem in goal_order]
 
         final_places = {}
 
@@ -399,5 +430,35 @@ class Spacecraft:
             final_order.append(root)
         return final_order
 
-    def grow(self):
-        return None
+    def grow(self, order):
+        """moves the sorted module chain to form the goal structure"""
+        print(order)
+        print()
+        for idx in range(len(order)):
+            port_finder = [2, 3, 0, 1, 5, 4]
+            mod_type = order[idx][-self._mod_type:]
+            path = order[idx+1:]
+
+            if idx == 0:
+                self.disconnect_all(order[idx])
+                self.connect(order[-1], 2, order[idx], 0)
+                # self.goal.modules[order[idx].replace("_", "-")] = self.goal.modules.pop(order[idx])
+                # order[idx] = order[idx].replace("_", "-")
+                print(path)
+                continue
+
+            path = path + self.get_path(order[0], order[idx])
+            print(path)
+            sucess = False
+            last_mod = path[-2]
+            for port in range(len(self.goal.modules[last_mod])):
+                if self.goal.modules[last_mod][port] is None:
+                    continue
+                elif self.goal.modules[last_mod][port][-self._mod_type:] == mod_type:
+                    self.disconnect_all(order[idx])
+                    self.connect(order[idx], port_finder[port], path[-1], port)
+                    sucess = True
+
+            self.display()
+            if not sucess:
+                raise ValueError("Didn't connect the module properly, rewrite it dipshit")

@@ -40,23 +40,23 @@ class AStarGraph():
 
 def AStarSearch(start, end, graph):
     G = {} #Actual movement cost to each position from the start position
-    F = {} #Estimated movement cost of start to end going via this position
+    est= {} #Estimated movement cost of start to end going via this position
 
     # Initialize starting values
     G[start] = 0
-    F[start] = graph.heuristic(start, end)
+    est[start] = graph.heuristic(start, end)
 
     closedVertices = set()
     openVertices = set([start])
     cameFrom = {}
 
     while len(openVertices) > 0:
-        # Get the vertex in the open list with the lowest F score
+        # Get the vertex in the open list with the lowest estscore
         current = None
         currentFscore = None
         for pos in openVertices:
-            if current is None or F[pos] < currentFscore:
-                currentFscore = F[pos]
+            if current is None or est[pos] < currentFscore:
+                currentFscore = est[pos]
                 current = pos
 
         #Check if we have reached the goal
@@ -67,7 +67,7 @@ def AStarSearch(start, end, graph):
                 current = cameFrom[current]
                 path.append(current)
             path.reverse()
-            return path, F[end] #Done!
+            return path, est[end] #Done!
 
         #Mark the current vertex as closed
         openVertices.remove(current)
@@ -75,7 +75,7 @@ def AStarSearch(start, end, graph):
 
         #Update scores for vertices near the current position
         for neighbour in graph.get_vertex_neighbours(current):
-            if neighbour in closedVertices: 
+            if neighbour in closedVertices:
                 continue #We have already processed this node exhaustively
             candidateG = G[current] + graph.move_cost(current, neighbour)
 
@@ -88,7 +88,7 @@ def AStarSearch(start, end, graph):
             cameFrom[neighbour] = current
             G[neighbour] = candidateG
             H = graph.heuristic(neighbour, end)
-            F[neighbour] = G[neighbour] + H
+            est[neighbour] = G[neighbour] + H
 
     raise RuntimeError("A* failed to find a solution")
 
