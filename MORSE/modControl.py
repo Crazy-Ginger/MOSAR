@@ -7,7 +7,7 @@ import pymorse
 
 num_mod = 16
 
-morse = pymorse.Morse()
+# morse = pymorse.Morse()
 # morse.vehicle.arm.set_rotation("kuka_2", math.radians(-30)).result()
 
 

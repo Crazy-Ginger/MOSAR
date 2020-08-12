@@ -5,11 +5,13 @@ import jsonpickle as pickler
 
 import modControl as modCon
 
+from math import asin, atan2, degrees
+
 
 class Module:
     def __init__(self, mod_id, dimensions=(0.1, 0.1, 0.1)):
         self.connections = [None]*len(dimensions)*2
-        self.rotation = [0]*4
+        self.rotation = [1] + [0]*3
         self.position = None
         self.type = None
         self.id = mod_id
@@ -30,28 +32,76 @@ class Module:
 
 class Spacecraft:
     """A generic spacecraft class that contains a dictionary of modules and connections"""
-    def __init__(self, dimensions=3):
+    def __init__(self, tag_length=3):
         self._root = None
         self.modules = {}
-        self._dimensions = dimensions
         self.goal = None
+        self.tag_len = tag_length
 
-    def add_module(self, new_id, size=(0.1, 0.1, 0.1), rotation=(0, 0, 0, 0)):
+    def add_mod(self, new_id, size=(0.1, 0.1, 0.1), rotation=(1.0, 0., 0., 0.)):
         """Add an unconnected module to the craft dictionary"""
         new_mod = Module(new_id, size)
+        new_mod.type = new_id[-self.tag_len:]
         if not self._root:
             new_mod.position = [0.0, 0.0, 0.0]
             self._root = new_mod
         new_mod.rotation = list(rotation)
         self.modules[str(new_id)] = new_mod
 
+    def _get_position(self, fixed_mod, moved_mod, port_id):
+        """returns the coordinates of the connected module based off the given module and port"""
+        # detect cubiod modules here (changes offset)
+
+        # first get x, y, z diffs to be added
+        x_diff = (self.modules[fixed_mod].dimensions[0]/2) + (self.modules[moved_mod].dimensions[0]/2)
+        y_diff = (self.modules[fixed_mod].dimensions[1]/2) + self.modules[moved_mod].dimensions[1]/2
+        z_diff = self.modules[fixed_mod].dimensions[2]/2 + self.modules[moved_mod].dimensions[2]/2
+
+        # array allows port_id to index the correct offset
+        port_diff = [[-x_diff, 0, 0],
+                     [0, y_diff, 0],
+                     [x_diff, 0, 0],
+                     [0, -y_diff, 0],
+                     [0, 0, z_diff],
+                     [0, 0, -z_diff]]
+
+        # how to convert quaternion rotation to 1d matrix offset
+        diff = port_diff[port_id]
+        quat = self.modules[fixed_mod].rotation
+        euler = [90*round(degrees(atan2(2*(quat[0]*quat[1]+quat[2]*quat[3]), 1-2*(quat[1]**2 + quat[2]**2)))/90),
+                 90*round(degrees(asin(2*quat[0]*quat[2]-quat[3]*quat[1]))/90),
+                 90*round(degrees(atan2(2*(quat[0]*quat[3]+quat[1]*quat[2]), 1-2*(quat[2]**2+quat[3]**2))/90))]
+
+        return list(map(op.add, self.modules[fixed_mod].position, diff))
+
+    def check_adjacency(self, mod_a, mod_b):
+        """ returns true if mod_a and mod_b are next to each other (based on their positions)"""
+        mod_a = self.modules[mod_a]
+        mod_b = self.modules[mod_b]
+
+        for i in range(len(mod_a.position)*2):
+            if i % 2 == 0:
+                mul = 1
+            else:
+                mul = -1
+            difference = [0]*len(mod_a.position)
+            difference[i % 3] = mul * ((mod_a.dimensions[i % 3]/2) + (mod_b.dimensions[i % 3]/2))
+            if list(map(op.add, list(mod_a.position), difference)) == list(mod_b.position):
+                return True
+        return False
+
+    def check_line(self, mod):
+        """returns max length of line originating on given module"""
+        max_length = 0
+        for port in self.modules[mod].connections:
+            if port is not None:
+                max_length += 1
+                diff = list(map(op.sub, self.modules[mod].position, self.modules[port].position))
+                cont = True
+
     def connect(self, mod_a, mod_a_port, mod_b, mod_b_port):
         """Connects the 2 passed modules with the specified ports
         as orientation is going to be considered in future code it takes both ports"""
-        mod_a = str(mod_a)
-        mod_b = str(mod_b)
-        mod_a_port = int(mod_a_port)
-        mod_b_port = int(mod_b_port)
 
         # checks that the ports are not already in use
         try:
@@ -68,24 +118,26 @@ class Spacecraft:
 
         # give postitions to connected module
         if (self.modules[mod_a].position is not None) and (self.modules[mod_b].position is not None):
-            if abs(sum(tuple(map(op.sub, self.positions[mod_a], self.positions[mod_b])))) != 1:
-                raise KeyError("Modules %s, %s are not adjecent" % (mod_a, mod_b))
+            # checks modules are next to each other
+            if not self.check_adjacency(mod_a, mod_b):
+                raise ValueError("Modules %s, %s are not adjecent" % (mod_a, mod_b))
         elif self.modules[mod_a].position is not None:
-            self.modules[mod_b].position = self._get_position(mod_a, mod_a_port, mod_b)
+            self.modules[mod_b].position = self._get_position(mod_a, mod_b, mod_a_port)
+
         elif self.modules[mod_b].position is not None:
-            self.modules[mod_a].position = self._get_position(mod_b, mod_b_port, mod_a)
+            self.modules[mod_a].position = self._get_position(mod_b, mod_a, mod_b_port)
 
         self.modules[mod_a].connections[mod_a_port] = mod_b
         self.modules[mod_b].connections[mod_b_port] = mod_a
 
         # move the cubes to the correct positions
-        a_x = self.module[mod_a].position[0]
-        a_y = self.module[mod_a].position[1]
-        a_z = self.module[mod_a].position[2]
+        a_x = self.modules[mod_a].position[0]
+        a_y = self.modules[mod_a].position[1]
+        a_z = self.modules[mod_a].position[2]
 
-        b_x = self.module[mod_b].position[0]
-        b_y = self.module[mod_b].position[1]
-        b_z = self.module[mod_b].position[2]
+        b_x = self.modules[mod_b].position[0]
+        b_y = self.modules[mod_b].position[1]
+        b_z = self.modules[mod_b].position[2]
 
         modCon.set_dest(mod_a, a_x, a_y, a_z)
         modCon.set_dest(mod_b, b_x, b_y, b_z)
@@ -93,61 +145,21 @@ class Spacecraft:
     def connect_all(self, mod_id):
         """give a mod id, checks all adjacent positions and connects module to
         adjancent modules"""
-        if mod_id not in self.positions:
+        # this function requires knowing which ports to connect which means rotation
+        if self.modules[mod_id].position is None:
             raise IndexError("%s does not have a position so it not yet connected" % (mod_id))
 
-        for i in range(2 * self._dimensions):
-            if i % 2 == 0:
-                int_diff = 1
-            else:
-                int_diff = -1
-            # get a tuple with +/-1 in one dimension to test free space round root
-            difference = [0]*self._dimensions
-            difference[i % self._dimensions] = int_diff
-            difference = tuple(difference)
-            destination = tuple(map(op.add, self.positions[mod_id], difference))
-            for key, value in self.positions.items():
-                if value == destination and key not in self.modules[mod_id]:
-                    if sum(difference) == 1:
-                        for i in range(len(difference)):
-                            if difference[i] != 0:
-                                axis = i
-                    else:
-                        for i in range(len(difference)):
-                            if difference[i] != 0:
-                                axis = i + 3
-                    axis_to_port = [[2, 1, 4, 0, 3, 5],
-                                    [0, 3, 5, 2, 1, 4]]
-                    # connect module to chain
-                    self.connect(mod_id, axis_to_port[0][axis], key, axis_to_port[1][axis])
-
-    def _get_position(self, fixed_mod, moved_mod, port_id):
-        """returns the coordinates of the connected module based off the given module and port"""
-
-        # first get x, y, z diffs to be added
-        x_diff = self.modules[fixed_mod].dimension[0]/2 + self.modules[moved_mod].dimension[0]/2
-        y_diff = self.modules[fixed_mod].dimension[1]/2 + self.modules[moved_mod].dimension[1]/2
-        z_diff = self.modules[fixed_mod].dimension[2]/2 + self.modules[moved_mod].dimension[2]/2
-
-        # array allows port_id to index the correct offset
-        port_diff = [(-x_diff, 0, 0),
-                     (0, y_diff, 0),
-                     (x_diff, 0, 0),
-                     (0, -y_diff, 0),
-                     (0, 0, z_diff),
-                     (0, 0, -z_diff)]
-
-        # how to convert quaternion rotation to 1d matrix offset
-        diff = port_diff[port_id]
-
-        return sum(tuple(map(op.add, self.modules[fixed_mod].position, diff)))
+        # for mod in self.modules.keys():
+        # if mod != mod_id and self.check_adjacency(mod_id, mod):
+        # self.connect(mod_id,
+        return
 
     def disconnect(self, mod_id, port_id):
         """takes a module id and port number and disconnects that port"""
         mod_id = str(mod_id)
         port_id = int(port_id)
         if self.modules[mod_id].conncetions[port_id] is None:
-            # will now just accept to allow for bath disconnects
+            # will now just accept to allow for batch disconnects
             # raise ValueError("Port %d on module: %s is not connected" % (port_id, mod_id))
             return
         # disconnects port on other module
@@ -296,7 +308,7 @@ class Spacecraft:
             difference = [0]*self._dimensions
             difference[i % self._dimensions] = int_diff
             difference = tuple(difference)
-            destination = sum(tuple(map(op.add, self.module[root].position, difference)))
+            destination = sum(tuple(map(op.add, self.modules[root].position, difference)))
             if destination not in self.positions:
                 broke = True
                 break
@@ -310,7 +322,7 @@ class Spacecraft:
         while len(to_move) != 0:
             current_node, current_path = self.get_isolated_mod(root)
 
-            # move current node over path by getting positions outside of moduels
+            # move current node over path by getting positions outside of modules
             for node in current_path:
                 self.modules[current_node].position = tuple(map(op.add, self.positions[root], difference))
 
@@ -376,7 +388,7 @@ class Spacecraft:
             tmp_order.insert(0, current_order[0][i])
             self.disconnect_all(current_order[0][i])
             self.connect(current_order[0][i], lower_port, current_order[0][(-i-1)], axis_to_port[1][lower_port])
-            self.connect_all(current_order[0][i])
+            # self.connect_all(current_order[0][i])
 
         current_order.append(tmp_order)
         # removes from of row as it has been moved to below
@@ -402,8 +414,8 @@ class Spacecraft:
 
         # connect structure together
         # implement get_path(start, end) to allow for easy traversal
-        for key in self.modules:
-            self.connect_all(key)
+        # for key in self.modules:
+            # self.connect_all(key)
 
         # merge sorted rows
         if final_places[current_order[0][0]] < final_places[current_order[1][0]]:
