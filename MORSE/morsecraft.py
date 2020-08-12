@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.5
 import operator as op
 
 import jsonpickle as pickler
 
-# import modControl as modCon
+import modControl as modCon
 
 
 class Module:
@@ -71,12 +71,24 @@ class Spacecraft:
             if abs(sum(tuple(map(op.sub, self.positions[mod_a], self.positions[mod_b])))) != 1:
                 raise KeyError("Modules %s, %s are not adjecent" % (mod_a, mod_b))
         elif self.modules[mod_a].position is not None:
-            self.modules[mod_b].position = self._get_position(mod_a, mod_a_port)
+            self.modules[mod_b].position = self._get_position(mod_a, mod_a_port, mod_b)
         elif self.modules[mod_b].position is not None:
-            self.modules[mod_a].position = self._get_position(mod_b, mod_b_port)
+            self.modules[mod_a].position = self._get_position(mod_b, mod_b_port, mod_a)
 
         self.modules[mod_a].connections[mod_a_port] = mod_b
         self.modules[mod_b].connections[mod_b_port] = mod_a
+
+        # move the cubes to the correct positions
+        a_x = self.module[mod_a].position[0]
+        a_y = self.module[mod_a].position[1]
+        a_z = self.module[mod_a].position[2]
+
+        b_x = self.module[mod_b].position[0]
+        b_y = self.module[mod_b].position[1]
+        b_z = self.module[mod_b].position[2]
+
+        modCon.set_dest(mod_a, a_x, a_y, a_z)
+        modCon.set_dest(mod_b, b_x, b_y, b_z)
 
     def connect_all(self, mod_id):
         """give a mod id, checks all adjacent positions and connects module to
@@ -109,21 +121,26 @@ class Spacecraft:
                     # connect module to chain
                     self.connect(mod_id, axis_to_port[0][axis], key, axis_to_port[1][axis])
 
-    def _get_position(self, mod_id, port):
+    def _get_position(self, fixed_mod, moved_mod, port_id):
         """returns the coordinates of the connected module based off the given module and port"""
-        port_diff = [(-self.modules[mod_id].dimension[0], 0, 0),
-                     (0, self.modules[mod_id].dimension[1], 0),
-                     (self.modules[mod_id].dimension[0], 0, 0),
-                     (0, -self.modules[mod_id].dimension[1], 0)]
-        if self._dimensions == 3:
-            port_diff += [(0, 0, self.modules[mod_id].dimension[2]),
-                          (0, 0, -self.modules[mod_id].dimension[2])]
 
-        # rotation:
-        true_port = port
+        # first get x, y, z diffs to be added
+        x_diff = self.modules[fixed_mod].dimension[0]/2 + self.modules[moved_mod].dimension[0]/2
+        y_diff = self.modules[fixed_mod].dimension[1]/2 + self.modules[moved_mod].dimension[1]/2
+        z_diff = self.modules[fixed_mod].dimension[2]/2 + self.modules[moved_mod].dimension[2]/2
 
-        # position
-        return sum(tuple(map(op.add, self.modules[mod_id].position, port_diff[true_port])))
+        # array allows port_id to index the correct offset
+        port_diff = [(-x_diff, 0, 0),
+                     (0, y_diff, 0),
+                     (x_diff, 0, 0),
+                     (0, -y_diff, 0),
+                     (0, 0, z_diff),
+                     (0, 0, -z_diff)]
+
+        # how to convert quaternion rotation to 1d matrix offset
+        diff = port_diff[port_id]
+
+        return sum(tuple(map(op.add, self.modules[fixed_mod].position, diff)))
 
     def disconnect(self, mod_id, port_id):
         """takes a module id and port number and disconnects that port"""
@@ -145,14 +162,6 @@ class Spacecraft:
             self.disconnect(mod_id, port_id)
         # remove position for module so it can be repositioned
         del self.positions[mod_id]
-
-    def get_connections(self):
-        """outputs all the connections between all the modules"""
-        output = ""
-        for key in self.modules:
-            output += key
-            output += str(self.modules[key]) + "\n"
-        print(output)
 
     def get_isolated_mod(self, root):
         """gets unconnected module from root and path from root to it"""
@@ -192,6 +201,11 @@ class Spacecraft:
 
             to_visit.pop(0)
         return visited
+
+    def is_chain(self):
+        """detects where all modules are connected in a chain"""
+        start = self._root
+        current_pos = self.modules[start].position
 
     def get_path(self, root, goal):
         """pass root mod_id and goal mod_id"""
@@ -282,7 +296,7 @@ class Spacecraft:
             difference = [0]*self._dimensions
             difference[i % self._dimensions] = int_diff
             difference = tuple(difference)
-            destination = sum(tuple(map(op.add, self.positions[root], difference)))
+            destination = sum(tuple(map(op.add, self.module[root].position, difference)))
             if destination not in self.positions:
                 broke = True
                 break
@@ -295,12 +309,14 @@ class Spacecraft:
 
         while len(to_move) != 0:
             current_node, current_path = self.get_isolated_mod(root)
-            # the path can be used to get real world coordinates
-            # use this to move module (when set up morse)
+
+            # move current node over path by getting positions outside of moduels
+            for node in current_path:
+                self.modules[current_node].position = tuple(map(op.add, self.positions[root], difference))
 
             # disconnect the module and move it
             self.disconnect_all(current_node)
-            self.positions[current_node] = tuple(map(op.add, self.positions[root], difference))
+
             # get the ports to connect
             if sum(difference) == 1:
                 for i in range(len(difference)):
@@ -367,6 +383,8 @@ class Spacecraft:
         del current_order[0][:len(current_order[0])//2]
 
         # if sub-modules work could replace so arm just turns the modules over
+
+        # bubble sort both rows
         for sub_list in current_order:
             for i in range(len(sub_list)-1):
                 for j in range(0, len(sub_list)-i-1):
