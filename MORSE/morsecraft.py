@@ -90,7 +90,7 @@ class Spacecraft:
                 return True
         return False
 
-    def check_line(self, mod):
+    def check_chain(self, mod):
         """returns max length of line originating on given module"""
         max_length = 0
         for port in self.modules[mod].connections:
@@ -156,16 +156,17 @@ class Spacecraft:
 
     def disconnect(self, mod_id, port_id):
         """takes a module id and port number and disconnects that port"""
-        mod_id = str(mod_id)
-        port_id = int(port_id)
+
         if self.modules[mod_id].conncetions[port_id] is None:
             # will now just accept to allow for batch disconnects
             # raise ValueError("Port %d on module: %s is not connected" % (port_id, mod_id))
             return
-        # disconnects port on other module
-        self.modules[self.modules[mod_id].connectsion[port_id]][(port_id+2) % (self._dimensions*2)] = None
 
-        self.modules[mod_id].connectsion[port_id] = None
+        # disconnects port on other module
+        for port in self.modules[self.modules[mod_id].connections[port_id]]:
+            if port == mod_id:
+                port = None
+        self.modules[mod_id].connections[port_id] = None
 
     def disconnect_all(self, mod_id):
         """disconnects module from all connections"""
@@ -173,12 +174,10 @@ class Spacecraft:
         for port_id in range(len(self.modules[mod_id].connections)):
             self.disconnect(mod_id, port_id)
         # remove position for module so it can be repositioned
-        del self.positions[mod_id]
 
     def get_isolated_mod(self, root):
         """gets unconnected module from root and path from root to it"""
 
-        # uses DFS instead of BFS (change at some point)
         to_visit = [root]
         visited = []
         while len(to_visit) != 0:
@@ -214,13 +213,8 @@ class Spacecraft:
             to_visit.pop(0)
         return visited
 
-    def is_chain(self):
-        """detects where all modules are connected in a chain"""
-        start = self._root
-        current_pos = self.modules[start].position
-
     def get_path(self, root, goal):
-        """pass root mod_id and goal mod_id"""
+        """returns path from root mod_id and goal mod_id"""
         to_visit = {root}
         est_cost = {root: 0}
         final_cost = {}
@@ -413,7 +407,6 @@ class Spacecraft:
                         sub_list[j], sub_list[j+1] = sub_list[j+1], sub_list[j]
 
         # connect structure together
-        # implement get_path(start, end) to allow for easy traversal
         # for key in self.modules:
             # self.connect_all(key)
 
