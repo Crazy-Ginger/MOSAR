@@ -20,7 +20,7 @@ for num in range(num_mod):
 
     # Create module
     modules.append(CubeModule(mod_id))
-    modules[-1].translate(x=1+num*0.1, z=0.1)
+    modules[-1].translate(x=1, y=0.1, z=0.1*num)
 
     # Add a position sensor
     position = Pose()

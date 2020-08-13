@@ -10,7 +10,7 @@ from math import asin, atan2, degrees
 
 class Module:
     def __init__(self, mod_id, dimensions=(0.1, 0.1, 0.1)):
-        self.connections = [None]*len(dimensions)*2
+        self.cons = [None]*len(dimensions)*2
         self.rotation = [1] + [0]*3
         self.position = None
         self.type = None
@@ -22,12 +22,6 @@ class Module:
 
     def __repr__(self):
         return self.id
-
-    def __hash__(self):
-        return hash(self.id)
-
-    def __eq__(self, other):
-        return (isinstance(other, self.__class__) and hash(getattr(other, 'id', None)) == hash(self.id))
 
 
 class Spacecraft:
@@ -72,6 +66,40 @@ class Spacecraft:
                  90*round(degrees(asin(2*quat[0]*quat[2]-quat[3]*quat[1]))/90),
                  90*round(degrees(atan2(2*(quat[0]*quat[3]+quat[1]*quat[2]), 1-2*(quat[2]**2+quat[3]**2))/90))]
 
+        # normalises coordinates so only positives are used
+        for i in range(len(euler)):
+            if euler[i] == -90:
+                euler[i] == 270
+            elif euluer[i] == 360:
+                euler[i] == 0
+        
+        if euler[0] == 90:
+            port_diff[1], port_diff[3], port_diff[4], port_diff[5] = port_diff[4], port_diff[5], port_diff[3], port_diff[1]
+        elif euler[0] == 180:
+            port_diff[1], port_diff[3], port_diff[4], port_diff[5] = port_diff[3], port_diff[1], port_diff[5], port_diff[4]
+        elif euler[0] == 270:
+            port_diff[1], port_diff[3], port_diff[4], port_diff[5] = port_diff[5], port_diff[4], port_diff[1], port_diff[3]
+        else:
+            raise ValueError("Euler[0]: %d is unexpected" % (euler[0]))
+
+        if euler[1] == 90:
+            port_diff[0], port_diff[1], port_diff[2], port_diff[3] = port_diff[3], port_diff[0], port_diff[1], port_diff[2]
+        elif euler[1] == 180:
+            port_diff[0], port_diff[1], port_diff[2], port_diff[3] = port_diff[2], port_diff[3], port_diff[0], port_diff[1]
+        elif euler[1] == 270:
+            port_diff[0], port_diff[1], port_diff[2], port_diff[3] = port_diff[1], port_diff[2], port_diff[3], port_diff[0]
+        else:
+            raise ValueError("euler[1]: %d is unexpected" % (euler[1]))
+
+        if euler[2] == 90:
+            port_diff[0], port_diff[2], port_diff[4], port_diff[5] = port_diff[4], port_diff[5], port_diff[2], port_diff[0]
+        elif euler[2] == 180:
+            port_diff[0], port_diff[2], port_diff[4], port_diff[5] = port_diff[2], port_diff[0], port_diff[5], port_diff[4]
+        elif euler[2] == 270:
+            port_diff[0], port_diff[2], port_diff[4], port_diff[5] = port_diff[5], port_diff[4], port_diff[0], port_diff[2]
+        else:
+            raise ValueError("euler[2]: %d is unexpected" % (euler[2]))
+
         return list(map(op.add, self.modules[fixed_mod].position, diff))
 
     def check_adjacency(self, mod_a, mod_b):
@@ -105,13 +133,13 @@ class Spacecraft:
 
         # checks that the ports are not already in use
         try:
-            if self.modules[mod_a].connections[mod_a_port] is not None:
+            if self.modules[mod_a].cons[mod_a_port] is not None:
                 raise ValueError("The port %d on %s is already in use" % (mod_a_port, mod_a))
         except IndexError:
             raise IndexError("Port %d does not exist in this dimension" % (mod_a_port))
 
         try:
-            if self.modules[mod_b].connections[mod_b_port] is not None:
+            if self.modules[mod_b].cons[mod_b_port] is not None:
                 raise ValueError("The port %d on %s is already in use" % (mod_b_port, mod_b))
         except IndexError:
             raise IndexError("Port %d does not exist in this dimension" % (mod_b_port))
@@ -127,8 +155,8 @@ class Spacecraft:
         elif self.modules[mod_b].position is not None:
             self.modules[mod_a].position = self._get_position(mod_b, mod_a, mod_b_port)
 
-        self.modules[mod_a].connections[mod_a_port] = mod_b
-        self.modules[mod_b].connections[mod_b_port] = mod_a
+        self.modules[mod_a].cons[mod_a_port] = mod_b
+        self.modules[mod_b].cons[mod_b_port] = mod_a
 
         # move the cubes to the correct positions
         a_x = self.modules[mod_a].position[0]
@@ -139,8 +167,8 @@ class Spacecraft:
         b_y = self.modules[mod_b].position[1]
         b_z = self.modules[mod_b].position[2]
 
-        modCon.set_dest(mod_a, a_x, a_y, a_z)
-        modCon.set_dest(mod_b, b_x, b_y, b_z)
+        modCon.set_dest(mod_a, x=a_x, y=a_y, z=a_z)
+        modCon.set_dest(mod_b, x=b_x, y=b_y, z=b_z)
 
     def connect_all(self, mod_id):
         """give a mod id, checks all adjacent positions and connects module to
@@ -163,10 +191,10 @@ class Spacecraft:
             return
 
         # disconnects port on other module
-        for port in self.modules[self.modules[mod_id].connections[port_id]]:
+        for port in self.modules[self.modules[mod_id].cons[port_id]]:
             if port == mod_id:
                 port = None
-        self.modules[mod_id].connections[port_id] = None
+        self.modules[mod_id].cons[port_id] = None
 
     def disconnect_all(self, mod_id):
         """disconnects module from all connections"""
@@ -368,7 +396,7 @@ class Spacecraft:
 
         # find unoccupied dimension and sets the port to use
         for port_id in range(len(self.modules[current_order[len(current_order)//2]].connections)):
-            if self.modules[current_order[len(current_order)//2]].connections[port_id] is not None:
+            if self.modules[current_order[len(current_order)//2]].cons[port_id] is not None:
                 occupied = port_id
                 break
         axis_to_port = [[2, 1, 4, 0, 3, 5],
@@ -472,9 +500,9 @@ class Spacecraft:
             sucess = False
             last_mod = path[-2]
             for port in range(len(self.goal.modules[last_mod].connections)):
-                if self.goal.modules[last_mod].connections[port] is None:
+                if self.goal.modules[last_mod].cons[port] is None:
                     continue
-                elif self.goal.modules[last_mod].connections[port][-self._mod_type:] == mod_type:
+                elif self.goal.modules[last_mod].cons[port][-self._mod_type:] == mod_type:
                     self.disconnect_all(order[idx])
                     self.connect(order[idx], port_finder[port], path[-1], port)
                     sucess = True
