@@ -1,14 +1,20 @@
 #!/usr/bin/env python3.5
+"""Spacecraft made up of Modules use in conjunction with morse for heterogeneous modular systems"""
 import operator as op
+from math import asin, atan2, degrees
 
 import jsonpickle as pickler
 
 import modControl as modCon
 
-from math import asin, atan2, degrees
+# write a path modifier that moves the given module outside the modeles to its designated location
+# then write "main" to properly create the spacecraft and move it around
 
 
 class Module:
+    """A module class that contains:
+        position, rotation, connections, type, dimensions, id
+    used within spacecraft"""
     def __init__(self, mod_id, dimensions=(0.1, 0.1, 0.1)):
         self.cons = [None]*len(dimensions)*2
         self.rotation = [1] + [0]*3
