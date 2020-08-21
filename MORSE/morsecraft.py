@@ -1,14 +1,16 @@
 #!/usr/bin/env python3.5
 """Spacecraft made up of Modules use in conjunction with morse for heterogeneous modular systems"""
+import math
 import operator as op
-from math import asin, atan2, degrees
 
 import jsonpickle as pickler
+from numpy import array, round
 
 import modControl as modCon
 
 # write a path modifier that moves the given module outside the modeles to its designated location
 # then write "main" to properly create the spacecraft and move it around
+# rewrite connect_all so that it can connect module to all adjacenty modules
 
 
 class Module:
@@ -38,91 +40,87 @@ class Spacecraft:
         self.goal = None
         self.tag_len = tag_length
 
-    def add_mod(self, new_id, size=(0.1, 0.1, 0.1), rotation=(1.0, 0., 0., 0.)):
+    def add_mod(self, new_id, size=(0.1, 0.1, 0.1), rotation=(0, 0, 0)):
         """Add an unconnected module to the craft dictionary"""
         new_mod = Module(new_id, size)
         new_mod.type = new_id[-self.tag_len:]
         if not self._root:
             new_mod.position = [0.0, 0.0, 0.0]
             self._root = new_mod
-        new_mod.rotation = list(rotation)
+        x = math.radians(rotation[0])/2
+        y = math.radians(rotation[1])/2
+        z = math.radians(rotation[2])/2
+        cos = math.cos()
+        sin = math.sin()
+        new_mod.rotation = [cos(x)*cos(y)*cos(z) + sin(x)*sin(y)*sin(z),
+                            sin(x)*cos(y)*cos(z) - cos(x)*sin(y)*sin(z),
+                            cos(x)*sin(y)*cos(z) + sin(x)*cos(y)*sin(z),
+                            cos(x)*cos(y)*sin(z) - sin(x)*sin(y)*cos(z)]
         self.modules[str(new_id)] = new_mod
+
+    def set_orientation(self, mod_id, rotation):
+        """"pass mod_id and new rotation and the module's rotation will be set accordingly"""
+        x = math.radians(rotation[0])/2
+        y = math.radians(rotation[1])/2
+        z = math.radians(rotation[2])/2
+        cos = math.cos()
+        sin = math.sin()
+        self.modules[mod_id].rotation = [cos(x)*cos(y)*cos(z) + sin(x)*sin(y)*sin(z),
+                                         sin(x)*cos(y)*cos(z) - cos(x)*sin(y)*sin(z),
+                                         cos(x)*sin(y)*cos(z) + sin(x)*cos(y)*sin(z),
+                                         cos(x)*cos(y)*sin(z) - sin(x)*sin(y)*cos(z)]
 
     def _get_position(self, fixed_mod, moved_mod, port_id):
         """returns the coordinates of the connected module based off the given module and port"""
-        # detect cubiod modules here (changes offset)
+        fixed_mod = self.modules[fixed_mod]
+        moved_mod = self.modules[moved_mod]
+
+        # detect modules with more than one port per face (change offset)
 
         # first get x, y, z diffs to be added
-        x_diff = (self.modules[fixed_mod].dimensions[0]/2) + (self.modules[moved_mod].dimensions[0]/2)
-        y_diff = (self.modules[fixed_mod].dimensions[1]/2) + self.modules[moved_mod].dimensions[1]/2
-        z_diff = self.modules[fixed_mod].dimensions[2]/2 + self.modules[moved_mod].dimensions[2]/2
+        x_diff = (fixed_mod.dimensions[0]/2) + (moved_mod.dimensions[0]/2)
+        y_diff = (fixed_mod.dimensions[1]/2) + moved_mod.dimensions[1]/2
+        z_diff = fixed_mod.dimensions[2]/2 + moved_mod.dimensions[2]/2
 
         # array allows port_id to index the correct offset
-        port_diff = [[-x_diff, 0, 0],
-                     [0, y_diff, 0],
-                     [x_diff, 0, 0],
-                     [0, -y_diff, 0],
-                     [0, 0, z_diff],
-                     [0, 0, -z_diff]]
+        ports = [[-x_diff, 0, 0],
+                 [0, y_diff, 0],
+                 [x_diff, 0, 0],
+                 [0, -y_diff, 0],
+                 [0, 0, z_diff],
+                 [0, 0, -z_diff]]
 
-        # how to convert quaternion rotation to 1d matrix offset
-        diff = port_diff[port_id]
-        quat = self.modules[fixed_mod].rotation
-        euler = [90*round(degrees(atan2(2*(quat[0]*quat[1]+quat[2]*quat[3]), 1-2*(quat[1]**2 + quat[2]**2)))/90),
-                 90*round(degrees(asin(2*quat[0]*quat[2]-quat[3]*quat[1]))/90),
-                 90*round(degrees(atan2(2*(quat[0]*quat[3]+quat[1]*quat[2]), 1-2*(quat[2]**2+quat[3]**2))/90))]
+        # convert quaternions to rotation matrix which can be applied upon the ports
+        q = fixed_mod.rotation
+        rotation = array([[1-2*(q[2]**2+q[3]**2), 2*(q[1]*q[2]-q[3]*q[0]), 2*(q[1]*q[3]+q[2]*q[0]), 0],
+                          [2*(q[1]*q[2]+q[3]*q[0]), 1-2*(q[1]**2+q[3]**2), 2*(q[2]*q[3]-q[1]*q[0]), 0],
+                          [2*(q[1]*q[3]-q[2]*q[0]), 2*(q[2]*q[3]+q[1]*q[0]), 1-2*(q[1]**2+q[2]**2), 0],
+                          [0, 0, 0, 1]])
 
-        # normalises coordinates so only positives are used
-        for i in range(len(euler)):
-            if euler[i] == -90:
-                euler[i] == 270
-            elif euluer[i] == 360:
-                euler[i] == 0
-        
-        if euler[0] == 90:
-            port_diff[1], port_diff[3], port_diff[4], port_diff[5] = port_diff[4], port_diff[5], port_diff[3], port_diff[1]
-        elif euler[0] == 180:
-            port_diff[1], port_diff[3], port_diff[4], port_diff[5] = port_diff[3], port_diff[1], port_diff[5], port_diff[4]
-        elif euler[0] == 270:
-            port_diff[1], port_diff[3], port_diff[4], port_diff[5] = port_diff[5], port_diff[4], port_diff[1], port_diff[3]
-        else:
-            raise ValueError("Euler[0]: %d is unexpected" % (euler[0]))
+        # select the port from port_id
+        diff = array(ports[port_id]) + [0]
 
-        if euler[1] == 90:
-            port_diff[0], port_diff[1], port_diff[2], port_diff[3] = port_diff[3], port_diff[0], port_diff[1], port_diff[2]
-        elif euler[1] == 180:
-            port_diff[0], port_diff[1], port_diff[2], port_diff[3] = port_diff[2], port_diff[3], port_diff[0], port_diff[1]
-        elif euler[1] == 270:
-            port_diff[0], port_diff[1], port_diff[2], port_diff[3] = port_diff[1], port_diff[2], port_diff[3], port_diff[0]
-        else:
-            raise ValueError("euler[1]: %d is unexpected" % (euler[1]))
-
-        if euler[2] == 90:
-            port_diff[0], port_diff[2], port_diff[4], port_diff[5] = port_diff[4], port_diff[5], port_diff[2], port_diff[0]
-        elif euler[2] == 180:
-            port_diff[0], port_diff[2], port_diff[4], port_diff[5] = port_diff[2], port_diff[0], port_diff[5], port_diff[4]
-        elif euler[2] == 270:
-            port_diff[0], port_diff[2], port_diff[4], port_diff[5] = port_diff[5], port_diff[4], port_diff[0], port_diff[2]
-        else:
-            raise ValueError("euler[2]: %d is unexpected" % (euler[2]))
-
-        return list(map(op.add, self.modules[fixed_mod].position, diff))
+        # apply rotation matrix to get new direction of offset then add to fixed mod position
+        return tuple(map(op.add, fixed_mod.position, tuple(rotation.dot(diff)[:3])))
 
     def check_adjacency(self, mod_a, mod_b):
-        """ returns true if mod_a and mod_b are next to each other (based on their positions)"""
+        """ returns true and the unrotated port_id if mod_a and mod_b are next to each other (based on their positions)"""
         mod_a = self.modules[mod_a]
         mod_b = self.modules[mod_b]
 
         for i in range(len(mod_a.position)*2):
+            # ensures that both directions of each dimension are tested
             if i % 2 == 0:
                 mul = 1
             else:
                 mul = -1
+            # sets only one dimension to the offset the modules would be
             difference = [0]*len(mod_a.position)
             difference[i % 3] = mul * ((mod_a.dimensions[i % 3]/2) + (mod_b.dimensions[i % 3]/2))
-            if list(map(op.add, list(mod_a.position), difference)) == list(mod_b.position):
-                return True
-        return False
+
+            if tuple(map(op.add, tuple(mod_a.position), difference)) == tuple(mod_b.position):
+                return (True, i)
+        return (False, None)
 
     def check_chain(self, mod):
         """returns max length of line originating on given module"""
@@ -132,6 +130,28 @@ class Spacecraft:
                 max_length += 1
                 diff = list(map(op.sub, self.modules[mod].position, self.modules[port].position))
                 cont = True
+
+    def get_port(self, mod, base_port):
+        """returns the actual port to connect modules with when passed mod and the port to connect without rotation"""
+        base_direcs = [[-1, 0, 0, 0],
+                       [0, 1, 0, 0],
+                       [1, 0, 0, 0],
+                       [0, -1, 0, 0],
+                       [0, 0, 1, 0]
+                       [0, 0, -1, 0]]
+        direction = array(base_direcs[base_port])
+        q = self.modules[mod].rotation
+        rotation = array([[1-2*(q[2]**2+q[3]**2), 2*(q[1]*q[2]-q[3]*q[0]), 2*(q[1]*q[3]+q[2]*q[0]), 0],
+                          [2*(q[1]*q[2]+q[3]*q[0]), 1-2*(q[1]**2+q[3]**2), 2*(q[2]*q[3]-q[1]*q[0]), 0],
+                          [2*(q[1]*q[3]-q[2]*q[0]), 2*(q[2]*q[3]+q[1]*q[0]), 1-2*(q[1]**2+q[2]**2), 0],
+                          [0, 0, 0, 1]])
+        rotated = rotation.dot(base_direcs)
+
+        # now check which port hsa the same vector as the base port
+        for index in range(len(base_direcs)):
+            if rotated[index] == direction:
+                return index
+        raise ValueError("Apperntly no ports point in that direction someone is wrong (blame the writer)")
 
     def connect(self, mod_a, mod_a_port, mod_b, mod_b_port):
         """Connects the 2 passed modules with the specified ports
@@ -153,7 +173,7 @@ class Spacecraft:
         # give postitions to connected module
         if (self.modules[mod_a].position is not None) and (self.modules[mod_b].position is not None):
             # checks modules are next to each other
-            if not self.check_adjacency(mod_a, mod_b):
+            if not self.check_adjacency(mod_a, mod_b)[0]:
                 raise ValueError("Modules %s, %s are not adjecent" % (mod_a, mod_b))
         elif self.modules[mod_a].position is not None:
             self.modules[mod_b].position = self._get_position(mod_a, mod_b, mod_a_port)
@@ -165,6 +185,7 @@ class Spacecraft:
         self.modules[mod_b].cons[mod_b_port] = mod_a
 
         # move the cubes to the correct positions
+        # won't move modules already in place
         a_x = self.modules[mod_a].position[0]
         a_y = self.modules[mod_a].position[1]
         a_z = self.modules[mod_a].position[2]
@@ -174,19 +195,24 @@ class Spacecraft:
         b_z = self.modules[mod_b].position[2]
 
         modCon.set_dest(mod_a, x=a_x, y=a_y, z=a_z)
-        modCon.set_dest(mod_b, x=b_x, y=b_y, z=b_z)
+        modCon.set_dzaest(mod_b, x=b_x, y=b_y, z=b_z)
 
     def connect_all(self, mod_id):
         """give a mod id, checks all adjacent positions and connects module to
         adjancent modules"""
-        # this function requires knowing which ports to connect which means rotation
         if self.modules[mod_id].position is None:
             raise IndexError("%s does not have a position so it not yet connected" % (mod_id))
 
-        # for mod in self.modules.keys():
-        # if mod != mod_id and self.check_adjacency(mod_id, mod):
-        # self.connect(mod_id,
-        return
+        for mod in self.modules:
+            if mod != mod_id:
+                adja = self.check_adjacency(mod_id, mod)
+                if adja[0] is True:
+                    # use the returned port to get the actual ports to connect with and then connect the mods
+                    mod_a_port = self.get_port(mod, adja[1])
+                    base_connections = [2, 3, 0, 1, 5, 4]
+                    mod_b_port = self.get_port(mod, base_connections[adja[1]])
+
+                    self.connect(mod_id, mod_a_port, mod, mod_b_port)
 
     def disconnect(self, mod_id, port_id):
         """takes a module id and port number and disconnects that port"""
@@ -200,7 +226,7 @@ class Spacecraft:
         for port in self.modules[self.modules[mod_id].cons[port_id]]:
             if port == mod_id:
                 port = None
-        self.modules[mod_id].cons[port_id] = None
+        self.modules[mod_id].connections[port_id] = None
 
     def disconnect_all(self, mod_id):
         """disconnects module from all connections"""
@@ -310,6 +336,14 @@ class Spacecraft:
         write_file = open(file_name+".json", "w")
         write_file.write(pickler.encode(self))
 
+    def get_coord_path(self, path):
+        """pass  a list of modules and return a list of coordinates around them"""
+        coords = [self.modules[path[0]].position]
+        path = path[1:]
+        for node in path:
+            node_pos = self.modeles[node].position
+
+
     def melt(self, root=None):
         """Places all modules in a line"""
         # get most extreme module or check passed module
@@ -326,23 +360,11 @@ class Spacecraft:
                 raise ValueError("%s is not a valid root" % (root))
 
         # find coords of free space next to root
-        broke = False
-        for i in range(2*self._dimensions):
-            if i % 2 == 0:
-                int_diff = 1
-            else:
-                int_diff = -1
-            # get a tuple with +/-1 in one dimension to test free space round root
-            difference = [0]*self._dimensions
-            difference[i % self._dimensions] = int_diff
-            difference = tuple(difference)
-            destination = sum(tuple(map(op.add, self.modules[root].position, difference)))
-            if destination not in self.positions:
-                broke = True
+        port_id = None
+        for i in root.connections:
+            if root.conncetions[i] is None:
+                port_id = i
                 break
-        if broke is False:
-            raise ValueError("Did not find a free port around root: %s" % (root))
-
         # moves all modules into chain
         moved = []
         to_move = set(self.modules.keys())
@@ -350,26 +372,16 @@ class Spacecraft:
         while len(to_move) != 0:
             current_node, current_path = self.get_isolated_mod(root)
 
+            coord_path = self.get_coord_path(current_path)
             # move current node over path by getting positions outside of modules
-            for node in current_path:
-                self.modules[current_node].position = tuple(map(op.add, self.positions[root], difference))
+            for node in coord_path:
+                break
 
             # disconnect the module and move it
             self.disconnect_all(current_node)
 
-            # get the ports to connect
-            if sum(difference) == 1:
-                for i in range(len(difference)):
-                    if difference[i] != 0:
-                        axis = i
-            else:
-                for i in range(len(difference)):
-                    if difference[i] != 0:
-                        axis = i + 3
-            axis_to_port = [[2, 1, 4, 0, 3, 5],
-                            [0, 3, 5, 2, 1, 4]]
-            # connect module to chain
-            self.connect(current_node, axis_to_port[0][axis], root, axis_to_port[1][axis])
+            # connect module to chain (1 needs to be replaced to take account of modules need to be in certain orientations)
+            self.connect(current_node, port_id, root, 0)
             moved.append(current_node)
             to_move.remove(current_node)
             root = current_node
