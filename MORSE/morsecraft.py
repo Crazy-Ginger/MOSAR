@@ -239,22 +239,26 @@ class Spacecraft:
     def get_isolated_mod(self, root):
         """gets unconnected module from root and path from root to it"""
 
-        to_visit = [root]
-        visited = []
-        while len(to_visit) != 0:
-            current_node = to_visit[0]
+        to_visit = [[root]]
+        visited = set()
+        while to_visit:
+            path = to_visit.pop(0)
+            current_node = path[-1]
+
             to_return = True
+
             # checks if current_node is only connected by 1 link
             if sum(x is None for x in self.modules[current_node]) == 5:
-                return current_node, visited
+                return current_node, path
 
             # add the children nodes in order
-            child_visit = []
-            for child in self.modules[current_node].connections:
-                if child is not None and child not in visited:
-                    child_visit.append(child)
-                    to_return = False
-            to_visit = child_visit + [to_visit[1:]]
+            elif current_node not in visited:
+                for child in self.modules[current_node].connections:
+                    if child is not None and child not in visited:
+                        new_path = list(path)
+                        new_path.append(child)
+                        to_visit.append(new_path)
+                        to_return = False
 
             if to_return is True:
                 return current_node, visited

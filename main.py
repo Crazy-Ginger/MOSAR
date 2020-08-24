@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from spacecraft import Spacecraft
+from testcraft import Spacecraft
 
 
 def main():
@@ -7,7 +7,7 @@ def main():
     craft = Spacecraft()
     craft = craft.import_from_file("test.json", goal=False)
     order = craft.melt("MOS1_MOT")
-    # craft.display()
+    craft.display()
     order = craft.sort(order)
     # craft.goal.display()
     craft.grow(order)
