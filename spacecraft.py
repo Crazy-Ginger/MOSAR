@@ -262,6 +262,7 @@ class Spacecraft:
     def melt(self, root=None):
         """Places all modules in a line"""
         # get most extreme module or check passed module
+        self.display()
         if root is None:
             root, dump_path = self.get_isolated_mod(next(iter(self.modules)))
         else:
@@ -298,6 +299,7 @@ class Spacecraft:
 
         while len(to_move) != 0:
             current_node, current_path = self.get_isolated_mod(root)
+            print(current_node, " path: ", current_path)
             # the path can be used to get real world coordinates
             # use this to move module (when set up morse)
 

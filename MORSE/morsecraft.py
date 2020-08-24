@@ -34,11 +34,12 @@ class Module:
 
 class Spacecraft:
     """A generic spacecraft class that contains a dictionary of modules and connections"""
-    def __init__(self, tag_length=3):
+    def __init__(self, tag_length=3, precision=0.01):
         self._root = None
         self.modules = {}
         self.goal = None
         self.tag_len = tag_length
+        self.precision = precision
 
     def add_mod(self, new_id, size=(0.1, 0.1, 0.1), rotation=(0, 0, 0)):
         """Add an unconnected module to the craft dictionary"""
@@ -243,13 +244,17 @@ class Spacecraft:
         while len(to_visit) != 0:
             current_node = to_visit[0]
             to_return = True
-            if all(x is None for x in self.modules[current_node]):
+            # checks if current_node is only connected by 1 link
+            if sum(x is None for x in self.modules[current_node]) == 5:
                 return current_node, visited
 
+            # add the children nodes in order
+            child_visit = []
             for child in self.modules[current_node].connections:
                 if child is not None and child not in visited:
-                    to_visit = [child] + [to_visit[1:]]
+                    child_visit.append(child)
                     to_return = False
+            to_visit = child_visit + [to_visit[1:]]
 
             if to_return is True:
                 return current_node, visited
@@ -336,12 +341,12 @@ class Spacecraft:
         write_file = open(file_name+".json", "w")
         write_file.write(pickler.encode(self))
 
-    def get_coord_path(self, path):
+    def get_coord_path(self, mod_dims, path):
         """pass  a list of modules and return a list of coordinates around them"""
-        coords = [self.modules[path[0]].position]
-        path = path[1:]
-        for node in path:
-            node_pos = self.modeles[node].position
+        path = path[::-1]
+        moving_mod = self.modules[path[0]]
+        # for i in range(len(path)-1, 0, -1):
+
 
 
     def melt(self, root=None):
@@ -359,29 +364,46 @@ class Spacecraft:
             if good_root is False:
                 raise ValueError("%s is not a valid root" % (root))
 
+        # connect all modules together to ensure optimum paths
+        for node in self.modules():
+            self.connect_all(node)
+
         # find coords of free space next to root
         port_id = None
         for i in root.connections:
             if root.conncetions[i] is None:
                 port_id = i
                 break
+        port_map = [2, 3, 0, 1, 5, 4]
         # moves all modules into chain
         moved = []
         to_move = set(self.modules.keys())
 
         while len(to_move) != 0:
+            # gets an isolated mod and the path of modules that connect it to the root
             current_node, current_path = self.get_isolated_mod(root)
+            current_path = [current_node] + current_path + [current_node]
 
-            coord_path = self.get_coord_path(current_path)
+            # gets the path of coordiantes for the module to travel along
+            coord_path = self.get_coord_path(self.modules[current_node].dimensions, current_path)
+
             # move current node over path by getting positions outside of modules
-            for node in coord_path:
-                break
+            for coords in coord_path:
+                modCon.set_dest(mod_id=current_node, x=coords[0], y=coords[1], z=coords[2])
+                # ensures that the module has been moved before continuing
+                cont = False
+                while cont is False:
+                    pose = modCon.get_pose(current_node)
+                    if coords[0] - self.precision <= pose["x"] <= coords[0] + self.precision:
+                        if coords[1] - self.precision <= pose["y"] <= coords[1] + self.precision:
+                            if coords[2] - self.precision <= pose["z"] <= coords[2] + self.precision:
+                                cont = True
 
             # disconnect the module and move it
             self.disconnect_all(current_node)
 
             # connect module to chain (1 needs to be replaced to take account of modules need to be in certain orientations)
-            self.connect(current_node, port_id, root, 0)
+            self.connect(current_node, port_id, root, self.get_port(port_map[port_id]))
             moved.append(current_node)
             to_move.remove(current_node)
             root = current_node
