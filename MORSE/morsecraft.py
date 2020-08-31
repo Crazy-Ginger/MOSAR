@@ -9,6 +9,7 @@ import numpy as np
 import modControl as modCon
 
 # write a path modifier that moves the given module outside the modules to its designated location
+# consider using "uncertainties" package to deal with inaccuracies in coordinate system/simulation
 
 
 class Module:
@@ -377,7 +378,7 @@ class Spacecraft:
 
         moving_mod = self.modules[moving_mod]
 
-        # get the corners where the direction of movement changes (this is inside the cubes)
+        # move the starting position clear of the structure
         diff = list(map(op.sub, self.modules[path[0]].position, self.modules[path[1]].position))
         for index in range(len(diff)):
             if abs(diff[index]) > (self.modules[path[0]].dimension[index]/2 + self.modules[path[1]].dimension[index]/2):
@@ -389,6 +390,7 @@ class Spacecraft:
                 break
         initial_path[0][axis_of_movement] += (clearance*mul)
 
+        # get the corners where the direction of movement changes (this is inside the cubes)
         for index in range(2, len(path)):
             diff = np.round(list(map(op.sub, self.modules[path[index-1]].position, self.modules[path[index]].position)), 4)
             if abs(diff[axis_of_movement]) < (self.modules[path[index-1]].dimension[index]/2 + self.modules[path[index]].dimension[index]/2):
@@ -403,8 +405,14 @@ class Spacecraft:
         # now with corners in path, extrapolate external coordinates
         for index in range(1, len(initial_path)):
             for dim in range(len(initial_path[index])):
-                if np.round(initial_path[index][dim] - initial_path[index-1][dim], 4) == moving_mod.dimensions:
-
+                # add the clearance to the dimension that isn't traveling
+                if abs(np.round(initial_path[index][dim] - initial_path[index-1][dim], 4)) == moving_mod.dimensions[dim] + clearance:
+                    initial_path[index][dim] = initial_path[index-1][dim] + clearance
+                # ensures the cube travel past the corner
+                elif initial_path[index][dim] > initial_path[index-1][dim]:
+                    initial_path[index][dim] += moving_mod.dimensions[dim] + clearance
+                elif initial_path[index][dim] < initial_path[index-1][dim]:
+                    initial_path[index][dim] -= (moving_mod.dimensions[dim] + clearance)
 
         print("initial_path:", initial_path)
 
