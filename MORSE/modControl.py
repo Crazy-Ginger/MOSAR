@@ -5,18 +5,19 @@ import pymorse
 
 num_mod = 16
 
-morse = pymorse.Morse()
 # morse.vehicle.arm.set_rotation("kuka_2", math.radians(-30)).result()
 
+morse = pymorse.Morse()
 
 def get_pose(mod_id):
+    # morse = pymorse.Morse()
     module = getattr(morse, mod_id)
     pose = module.position.get()
-    print(type(pose))
     return pose
 
 
 def set_dest(mod_id, x=0.0, y=0.0, z=0.0):
+    # morse = pymorse.Morse()
     module = getattr(morse, mod_id)
     destclient = module.destination
     destclient.publish({'x': x, 'y': y, 'z': z})
