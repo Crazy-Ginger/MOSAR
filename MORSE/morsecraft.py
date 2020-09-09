@@ -143,8 +143,8 @@ class Spacecraft:
         for port in self.modules[mod].cons:
             if port is not None:
                 max_length += 1
-                diff = list(map(op.sub, self.modules[mod].position, self.modules[port].position))
-                cont = True
+                # diff = list(map(op.sub, self.modules[mod].position, self.modules[port].position))
+                # cont = True
 
     def get_port(self, mod, base_port):
         """returns the actual port to connect modules with when passed mod and the port to connect without rotation"""
@@ -363,58 +363,97 @@ class Spacecraft:
         write_file = open(file_name+".json", "w")
         write_file.write(pickler.encode(self))
 
-    def get_coord_path(self, path, final_port, clearance=self.precision):
-        """pass  a list of modules and the port the module will be connected to, returns a list of coordinates around the path"""
-        print("\nGet Coords")
-        path = path[::-1]
-        print("path:", path)
-        moving_mod = path[0]
+    def get_coord_path(self, mod_path, final_port, clearance=None):
+        """pass  a list of modules and the port the module will be connected to, returns a list of coordinates around the path
+        doesn't take into account the orientation of the modules (will cause problems with different sized mods"""
+        if clearance is None:
+            clearance = self.precision
 
-        # get the final position of the module
-        final_pos = self.get_new_position(path[-1], moving_mod, final_port)
+        mod_path = mod_path[::-1]
+        moving_mod = mod_path[0]
+        path = np.array([self.modules[moving_mod].position])
+        final_pos = self.get_new_position(moving_mod, moving_mod, final_port)
+        moving_mod = self.modules[mod_path[0]]
 
-        # initial move is to move away from structure
-        initial_path = [self.modules[moving_mod].position]
+        # get the direction of clearance to place the module clear of the structure
+        # also ensures that the direction of movement is counter after 2nd connection
+        for j in range(2):
+            diff = np.round(list(map(op.sub, self.modules]mod_path[j]].pos, self.modules]mod_path[j+1]].pos)), 3)
+            for index in range(len(diff)):
+                if abs(diff[index]) >= 0.1:
+                    axis_of_movement = index
+                    if j != 0:
+                        break
+                    offset = np.round((clearance + moving_mod.dim[index]/2 + self.modules]mod_path[1]].dim[index]/2) * np.sign(self.modules]mod_path[0]].pos[index] - self.modules]mod_path[1]].pos[index]), 4)
+                    break
 
-        moving_mod = self.modules[moving_mod]
-
-        # move the starting position clear of the structure
-        diff = list(map(op.sub, self.modules[path[0]].position, self.modules[path[1]].position))
-        for index in range(len(diff)):
-            if abs(diff[index]) > (self.modules[path[0]].dimension[index]/2 + self.modules[path[1]].dimension[index]/2):
-                axis_of_movement = index
-                if self.modules[path[0]].position[index] > self.modules[path[1]].position[index]:
-                    mul = 1
-                else:
-                    mul = -1
-                break
-        initial_path[0][axis_of_movement] += (clearance*mul)
-
-        # get the corners where the direction of movement changes (this is inside the cubes)
-        for index in range(2, len(path)):
-            diff = np.round(list(map(op.sub, self.modules[path[index-1]].position, self.modules[path[index]].position)), 4)
-            if abs(diff[axis_of_movement]) < (self.modules[path[index-1]].dimension[index]/2 + self.modules[path[index]].dimension[index]/2):
-                initial_path.append(list(self.modules[path[index-1]].position))
-                for dim in range(len(diff)):
-                    if abs(diff[dim]) > self.precision:
-                        axis_of_movement = dim
+        # gets the corners in the path
+        # still using 0.1 for module size needs to be altered to take into account of module dimension
+        for index in range(2, len(mod_path)):
+            diff = np.round(list(map(op.sub, self.modules]mod_path[index-1]].pos, self.modules]mod_path[index]].pos)), 3)
+            if abs(diff[axis_of_movement]) < 0.1:
+                path = np.concatenate([path, np.array([list(self.modules]mod_path[index-1]].pos)])])
+                for index in range(len(diff)):
+                    if abs(diff[index]) > clearance:
+                        axis_of_movement = index
                         break
 
-        initial_path.append(final_pos)
+        # if a chain then add motions up and over the chain
+        if len(path) == 1:
+            # creates 2 new modules to move the module around the chain
+            up = np.array([path[0]])
+            over = np.array(np.array([final_pos]))
+            # marks axis to use with value that will be rounded out later
+            up[0][(axis_of_movement+1) % 3] = 0.000001
 
-        # now with corners in path, extrapolate external coordinates
-        for index in range(1, len(initial_path)):
-            for dim in range(len(initial_path[index])):
-                # add the clearance to the dimension that isn't traveling
-                if abs(np.round(initial_path[index][dim] - initial_path[index-1][dim], 4)) == moving_mod.dimensions[dim] + clearance:
-                    initial_path[index][dim] = initial_path[index-1][dim] + clearance
-                # ensures the cube travel past the corner
-                elif initial_path[index][dim] > initial_path[index-1][dim]:
-                    initial_path[index][dim] += moving_mod.dimensions[dim] + clearance
-                elif initial_path[index][dim] < initial_path[index-1][dim]:
-                    initial_path[index][dim] -= (moving_mod.dimensions[dim] + clearance)
+            path = np.concatenate((path, up))
+            path = np.concatenate((path, over))
 
-        print("initial_path:", initial_path)
+        else:
+            # add the final destination to the path
+            path = np.concatenate((path, np.array([final_pos])))
+
+        # make the first movement to place the module clear of the structure
+        path[0][axis_of_movement] += clearance
+        # offset = clearance + np.sign(clearance) * 0.1
+
+        mod_coords = np.array([self.modules]x].pos for x in mod_path])
+        # now with corners in mod_path, extrapolate external coordinates
+        for i in range(1, len(path)):
+            # take the previous offset to ensure that clearance is maintained in that axis
+            dims = [0, 1, 2]
+            path[i][axis_of_movement] = path[i-1][axis_of_movement]
+            dims.remove(axis_of_movement)
+            for dim in dims:
+                if path[i][dim] == path[i-1][dim]:
+                    break
+                axis_of_movement = dim
+
+                # ensures that
+                if i == len(path)-1:
+                    path[i][dim] += np.round(clearance * np.sign(path[i][dim] - path[i-1][dim]), 4)
+                # path[coords][dim] += np.round((clearance) * np.sign(path[coords][dim] - path[coords-1][dim]), 4)
+                # else:
+                # cur_mod = mod_coords.index(path[coords].all())
+                else:
+                    cur_mod = mod_path[np.where(mod_coords.all() == path[i])[0][0]]
+                    offset = np.round((clearance + self.modules]cur_mod].dim[dim]/2 + moving_mod.dim[dim]/2) * np.sign(path[i][dim] - path[i-1][dim]), 4)
+                    path[i][dim] += offset
+
+        path = np.concatenate((path, np.array([final_pos])))
+
+        # finally move the module around the last corner and onto the docking position
+        for dim in range(len(path[-1])):
+            if np.round(abs(path[-2][dim] - path[-1][dim]), 4) == clearance:
+                path[-1][dim] = path[-2][dim]
+                continue
+            else:
+                path[-1][dim] = final_pos[dim]
+
+        path = np.concatenate((path, np.array([final_pos])))
+
+        final_mod_path = np.array(path)
+        return np.round(final_mod_path, 3)
 
     def move_mod(self, mod_id, pos):
         """when called the program will only continue when the module has arrived at the passed position"""
@@ -558,7 +597,6 @@ class Spacecraft:
             for i in range(len(sub_list)-1):
                 for j in range(0, len(sub_list)-i-1):
                     if final_places[sub_list[j]] > final_places[sub_list[j+1]]:
-
                         pos1 = self.modules[sub_list[j]].position
                         pos2 = self.modules[sub_list[j+1]].position
                         self.disconnect_all(sub_list[j+1])
