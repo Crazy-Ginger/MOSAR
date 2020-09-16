@@ -17,6 +17,14 @@ while morse is None:
         sleep(0.5)
 
 
+def write(craft, mod_ids, filename="output.txt"):
+    print("adding to file")
+    file = open(filename, "w")
+    for mod_id in mod_ids:
+        file.write(str(craft.modules[mod_id].pos)+"\n")
+    print("written")
+
+
 def main():
     """main call function"""
     craft = Craft(tag_length=3, precision=0.05)
