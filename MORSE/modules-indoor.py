@@ -31,7 +31,7 @@ for num in range(num_mod):
     destination = Destination()
     modules[-1].append(destination)
     destination.add_stream('socket')
-    destination.properties(Speed=1.0, Tolerance=0.1, RemainAtDestination=True)
+    destination.properties(Speed=1.0, Tolerance=0.01, RemainAtDestination=True)
     # Add a socket interface to read properties
     modules[-1].add_service('socket')
 
