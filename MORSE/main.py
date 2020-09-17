@@ -27,7 +27,7 @@ def write(craft, mod_ids, filename="output.txt"):
 
 def main():
     """main call function"""
-    craft = Craft(tag_length=3, precision=0.05)
+    craft = Craft(tag_length=3, precision=0.02)
     craft.create_goal()
 
     mod_ids = [mod_id for mod_id in dir(morse) if mod_id[:3] == 'mod' and mod_id[3:6].isnumeric() and mod_id[7:].isalpha()]
