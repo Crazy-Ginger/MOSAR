@@ -112,10 +112,8 @@ class Spacecraft:
 
     def check_adjacency(self, mod_a, mod_b):
         """ returns true and the unrotated port_id if mod_a and mod_b are next to each other (based on their positions)"""
-        print("Adj check")
         mod_a = self.modules[mod_a]
         mod_b = self.modules[mod_b]
-        print("mod_a.pos:", mod_a.pos, "\tmod_b.pos:", mod_b.pos)
 
         for i in range(len(mod_a.pos)*2):
             # ensures that both directions of each dim are tested
@@ -127,10 +125,8 @@ class Spacecraft:
             difference = [0]*len(mod_a.pos)
             difference[i % len(mod_a.pos)] = mul * ((mod_a.dim[i % 3]/2) + (mod_b.dim[i % 3]/2))
 
-            # print("difference[%d]:" % (i), difference)
             mod_position = tuple(map(op.add, tuple(mod_a.pos), tuple(difference)))
 
-            # print("mod position[%d]:" % (i), mod_position)
             # refactor into single line without for loop (using sum)
             to_return = True
             for j in range(len(mod_position)):
@@ -176,7 +172,6 @@ class Spacecraft:
     def connect(self, mod_a, mod_a_port, mod_b, mod_b_port):
         """Connects the 2 passed modules with the specified ports
         as orientation is going to be considered in future code it takes both ports"""
-        print("mod_a.pos:", self.modules[mod_a].pos, "\tmod_b.pos:", self.modules[mod_b].pos)
         # checks that the ports are not already in use
         try:
             if self.modules[mod_a].cons[mod_a_port] is not None:
@@ -380,14 +375,26 @@ class Spacecraft:
 
         # get the direction of clearance to place the module clear of the structure
         # also ensures that the direction of movement is counter after 2nd connection
-        for j in range(2):
-            diff = np.round(list(map(op.sub, list(self.modules[mod_path[j]].pos), list(self.modules[mod_path[j+1]].pos))), 3)
+        # for j in range(2):
+            # diff = np.round(list(map(op.sub, list(self.modules[mod_path[j]].pos), list(self.modules[mod_path[j+1]].pos))), 3)
+            # for index in range(len(diff)):
+                # if abs(diff[index]) >= 0.1:
+                    # axis_of_movement = index
+                    # if j != 0:
+                        # break
+                    # offset = np.round(clearance * np.sign(self.modules[mod_path[0]].pos[index] - self.modules[mod_path[1]].pos[index]), 4)
+
+        diff = np.round(list(map(op.sub, list(self.modules[mod_path[0]].pos), list(self.modules[mod_path[1]].pos))), 3)
+        for index in range(len(diff)):
+            if abs(diff[index]) >= 0.1:
+                axis_of_movement = index
+                offset = np.round(clearance * np.sign(self.modules[mod_path[0]].pos[index] - self.modules[mod_path[1]].pos[index]), 4)
+
+        if len(mod_path) > 2:
+            diff = np.round(list(map(op.sub, list(self.modules[mod_path[1]].pos), list(self.modules[mod_path[2]].pos))), 3)
             for index in range(len(diff)):
                 if abs(diff[index]) >= 0.1:
                     axis_of_movement = index
-                    if j != 0:
-                        break
-                    offset = np.round(clearance * np.sign(self.modules[mod_path[0]].pos[index] - self.modules[mod_path[1]].pos[index]), 4)
 
         # gets the corners in the path
         # still using 0.1 for module size needs to be altered to take into account of module dimension
@@ -469,6 +476,7 @@ class Spacecraft:
             if dest[0] - precision <= pose["x"] <= dest[0] + precision:
                 if dest[1] - precision <= pose["y"] <= dest[1] + precision:
                     if dest[2] - precision <= pose["z"] <= dest[2] + precision:
+                        self.modules[mod_id].pos = tuple(dest)
                         cont = True
 
     def melt(self, root=None):
@@ -567,9 +575,9 @@ class Spacecraft:
         # splits the row in 2
         current_order = [current_order]
         for i in range(len(current_order[0]) // 2):
-            self.disconnect_all(current_order[0][i])
+            self.disconnect_all(current_order[0][0])
 
-            popped_mod = current_order[0].pop(i)
+            popped_mod = current_order[0].pop(0)
             path = current_order[0][-i-1::-1] + [popped_mod]
 
             if i == 0:
@@ -581,14 +589,12 @@ class Spacecraft:
             # path currently moves the module towards nearest module (oops)
             path = self.get_coord_path(path, unused[0])
             for coord in path:
-                self.modules[popped_mod].pos = tuple(coord)
                 self.move_mod(popped_mod, coord)
 
-            print(self.modules[popped_mod].pos, "\t", self.modules[current_order[0][-i-1]].pos)
             # connects to row above/below
-            self.connect(current_order[0][i], unused[0], current_order[0][-i-1], base_cons[unused[0]])
+            self.connect(popped_mod, unused[0], current_order[0][-i-1], base_cons[unused[0]])
             # connect to modules on it's own rown
-            self.connect_all(current_order[0][i])
+            self.connect_all(popped_mod)
 
         # remove the now used ports so that bubble sort only uses the remaining dimension
         unused.remove(base_cons[unused[0]])
