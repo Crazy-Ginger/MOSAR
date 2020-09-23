@@ -8,8 +8,8 @@ Created on Jun  18 18:18:18 2020
 
 numModules = 16
 
-from modules.builder.robots.cubemodule import CubeModule
 from morse.builder import *
+from modules.builder.robots.cubemodule import CubeModule
 
 #Create Modules
 modules = []

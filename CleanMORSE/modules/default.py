@@ -5,8 +5,8 @@
 Feel free to edit this template as you like!
 """
 
-from modules.builder.robots.cubemodule import CubeModule
 from morse.builder import *
+from modules.builder.robots.cubemodule import CubeModule
 
 # Out-the-box available robots are listed here:
 # http://www.openrobots.org/morse/doc/stable/components_library.html
@@ -29,8 +29,8 @@ robot.translate(0.2, 0.0, 0.0)
 #
 # 'morse add actuator <name> modules' can help you with the creation of a custom
 # actuator.
-# motion = MotionVW()
-# robot.append(motion)
+#motion = MotionVW()
+#robot.append(motion)
 
 
 # Add a keyboard controller to move the robot with arrow keys.
@@ -45,12 +45,12 @@ keyboard.properties(ControlType = 'Position')
 #
 # 'morse add sensor <name> modules' can help you with the creation of a custom
 # sensor.
-# pose = Pose()
-# robot.append(pose)
+#pose = Pose()
+#robot.append(pose)
 
 # To ease development and debugging, we add a socket interface to our robot.
 #
-# Check here: http://www.openrobots.org/morse/doc/stable/user/integration.html
+# Check here: http://www.openrobots.org/morse/doc/stable/user/integration.html 
 # the other available interfaces (like ROS, YARP...)
 robot.add_default_interface('socket')
 robot.add_service('socket')
@@ -61,3 +61,4 @@ mod2.add_service('socket')
 env = Environment('sandbox', fastmode = False)
 env.set_camera_location([-18.0, -6.7, 10.8])
 env.set_camera_rotation([1.09, 0, -1.14])
+

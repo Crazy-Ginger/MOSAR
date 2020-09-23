@@ -12,128 +12,128 @@ from morse.core.mathutils import Matrix, Vector, Euler, Quaternion
 # Orientation Matrix contents: ['Identity', 'OrthoProjection', 'Rotation', 'Scale', 'Shear', 'Translation', '__add__', '__class__', '__copy__', '__deepcopy__', '__delattr__', '__delitem__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getitem__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__invert__', '__le__', '__len__', '__lt__', '__mul__', '__ne__', '__new__', '__radd__', '__reduce__', '__reduce_ex__', '__repr__', '__rmul__', '__rsub__', '__setattr__', '__setitem__', '__sizeof__', '__str__', '__sub__', '__subclasshook__', 'adjugate', 'adjugated', 'col', 'copy', 'decompose', 'determinant', 'freeze', 'identity', 'invert', 'invert_safe', 'inverted', 'inverted_safe', 'is_frozen', 'is_negative', 'is_orthogonal', 'is_orthogonal_axis_vectors', 'is_wrapped', 'lerp', 'median_scale', 'normalize', 'normalized', 'owner', 'resize_4x4', 'rotate', 'row', 'to_3x3', 'to_4x4', 'to_euler', 'to_quaternion', 'to_scale', 'to_translation', 'translation', 'transpose', 'transposed', 'zero']
 
 class CubeModule(morse.core.robot.Robot):
-	""" 
-	Class definition for the cubemodule robot.
-	"""
+    """
+    Class definition for the cubemodule robot.
+    """
 
-	_name = 'Module'
-	_size = (0.1, 0.1, 0.1)
-	
-	def __init__(self, obj, parent=None):
-		""" Constructor method
+    _name = 'Module'
+    _size = (0.1, 0.1, 0.1)
 
-		Receives the reference to the Blender object.
-		Optionally it gets the name of the object's parent,
-		but that information is not currently used for a robot.
-		"""
+    def __init__(self, obj, parent=None):
+        """ Constructor method
 
-		logger.info('%s initialization' % obj.name)
-		morse.core.robot.Robot.__init__(self, obj, parent)
-		self.bge_object['ConnectedObjects'] = []
+        Receives the reference to the Blender object.
+        Optionally it gets the name of the object's parent,
+        but that information is not currently used for a robot.
+        """
 
-		# Do here robot specific initializations
-		logger.info('Component initialized')
+        logger.info('%s initialization' % obj.name)
+        morse.core.robot.Robot.__init__(self, obj, parent)
+        self.bge_object['ConnectedObjects'] = []
 
-	def default_action(self):
-		""" Main loop of the robot
-		"""
+        # Do here robot specific initializations
+        logger.info('Component initialized')
 
-		# This is usually not used (responsibility of the actuators
-		# and sensors). But you can add here robot-level actions.
-		pass
+    def default_action(self):
+        """ Main loop of the robot
+        """
 
-	def connection_points(self, modulePosition, moduleOrientation):
-		points = [
-			(modulePosition + moduleOrientation*Vector((self._size[0], 0.0, 0.0))),
-			(modulePosition + moduleOrientation*Vector((-self._size[0], 0.0, 0.0))),
-			(modulePosition + moduleOrientation*Vector((0.0, self._size[0], 0.0))),
-			(modulePosition + moduleOrientation*Vector((0.0, -self._size[0], 0.0))),
-			(modulePosition + moduleOrientation*Vector((0.0, 0.0, self._size[0]))),
-			(modulePosition + moduleOrientation*Vector((0.0, 0.0, -self._size[0])))
-			]
-		return points
+        # This is usually not used (responsibility of the actuators
+        # and sensors). But you can add here robot-level actions.
+        pass
 
-	@service
-	def colour(self, colour):
-		if type(colour) == list and len(colour) == 4:
-			self.bge_object.color = colour
-		else:
-			logger.warning("colour %s is not a list of length 4" %str(colour))
+    def connection_points(self, modulePosition, moduleOrientation):
+        points = [
+                (modulePosition + moduleOrientation*Vector((self._size[0], 0.0, 0.0))),
+                (modulePosition + moduleOrientation*Vector((-self._size[0], 0.0, 0.0))),
+                (modulePosition + moduleOrientation*Vector((0.0, self._size[0], 0.0))),
+                (modulePosition + moduleOrientation*Vector((0.0, -self._size[0], 0.0))),
+                (modulePosition + moduleOrientation*Vector((0.0, 0.0, self._size[0]))),
+                (modulePosition + moduleOrientation*Vector((0.0, 0.0, -self._size[0])))
+                ]
+        return points
 
-	@service
-	def link(self, grab, obj_name=None):
-		"""
-		Link to another object.
+    @service
+    def colour(self, colour):
+        if type(colour) == list and len(colour) == 4:
+            self.bge_object.color = colour
+        else:
+            logger.warning("colour %s is not a list of length 4" %str(colour))
 
-		:param grab: set to True to link to an object and False to release it
-		:param obj_name: when None the robot will just use the last object linked
-		"""
-		this_object = self.bge_object
-		logger.info("morse link request received from %s to %s" %(this_object.name, obj_name))
-		near_object = None
+    @service
+    def link(self, grab, obj_name=None):
+        """
+        Link to another object.
 
-		if grab:
-			if obj_name:
-				near_objects = [obj for obj in blenderapi.persistantstorage().robotDict.keys() if obj.name == obj_name]
-				if not near_objects:
-					logger.warning("no object named %s in %s" %(obj_name, str(blenderapi.persistantstorage().robotDict.keys()) ))
-					near_object = None
-				else:
-					near_object = near_objects[0]
-			
-			# If the object is draggable
-			if near_object is not None and near_object != '':
-				# Clear the previously selected object, if any
-				logger.debug("Object to connect is %s" % near_object.name)
-				this_object['ConnectedObjects'].append(near_object)
-				near_object['ConnectedObjects'].append(this_object)
-				
-				# Remove Physics simulation (can cause singularities)
-				#this_object.suspendDynamics()
-				
-				# Locate the nearest adjacent space to place the object
-				newOrientation = near_object.worldOrientation
-				logger.debug( "\n near_object.worldOrientation IS %s\n this_object.worldOrientation IS %s\n newOrientation IS %s" %(str(near_object.worldOrientation), str(this_object.worldOrientation), str(newOrientation)) )
-				connectionPoints = self.connection_points(near_object.worldPosition, near_object.worldOrientation)
-				logger.debug( "POINTS: %s" %str(connectionPoints) )
-				newPosition = connectionPoints[0]
-				minDistance = this_object.getDistanceTo(connectionPoints[0])
-				for point in connectionPoints:
-					if this_object.getDistanceTo(point) < minDistance:
-						newPosition = point
-						minDistance = this_object.getDistanceTo(point)
-				logger.debug( "\n near_object.worldPosition IS %s\n this_object.worldPosition IS %s\n newPosition IS %s" %(str(near_object.worldPosition), str(this_object.worldPosition), str(newPosition)) )
+        :param grab: set to True to link to an object and False to release it
+        :param obj_name: when None the robot will just use the last object linked
+        """
+        this_object = self.bge_object
+        logger.info("morse link request received from %s to %s" %(this_object.name, obj_name))
+        near_object = None
 
-				# Place object adjacent
-				this_object.worldOrientation = newOrientation
-				this_object.worldPosition = newPosition
-				#this_object.setLinearVelocity([0, 0, 0])
-				#this_object.setAngularVelocity([0, 0, 0])
-				
-				# Parent the selected object to the target
-				this_object.setParent(near_object)
-				logger.debug( "OBJECT %s CONNECTED TO %s" %(this_object.name, near_object.name) )
-		else:
-			if obj_name:
-				near_objects = [obj for obj in blenderapi.persistantstorage().robotDict.keys() if obj.name == obj_name]
-				if not near_objects:
-					logger.warning("no object named %s in %s"%(obj_name, str(blenderapi.persistantstorage().robotDict.keys()) ))
-					near_object = None
-				else:
-					near_object = near_objects[0]
-			else:
-				if len(this_object['ConnectedObjects']) > 0:
-					near_object = this_object['ConnectedObjects'][-1]
-			if near_object is not None and near_object != '' and near_object in this_object['ConnectedObjects']:
-				# Restore Physics simulation (can cause singularities)
-				#this_object.restoreDynamics()
-				#this_object.setLinearVelocity([0, 0, 0])
-				#this_object.setAngularVelocity([0, 0, 0])
-				
-				# Remove the parent
-				this_object.removeParent()
-				
-				# Clear the object from connect status
-				this_object['ConnectedObjects'].remove(near_object)
-				near_object['ConnectedObjects'].remove(this_object)
-				logger.info("OBJECT %s DISCONNECTED FROM %s" %(near_object.name, this_object.name) )
+        if grab:
+            if obj_name:
+                near_objects = [obj for obj in blenderapi.persistantstorage().robotDict.keys() if obj.name == obj_name]
+                if not near_objects:
+                    logger.warning("no object named %s in %s" %(obj_name, str(blenderapi.persistantstorage().robotDict.keys()) ))
+                    near_object = None
+                else:
+                    near_object = near_objects[0]
+
+            # If the object is draggable
+            if near_object is not None and near_object != '':
+                # Clear the previously selected object, if any
+                logger.debug("Object to connect is %s" % near_object.name)
+                this_object['ConnectedObjects'].append(near_object)
+                near_object['ConnectedObjects'].append(this_object)
+
+                # Remove Physics simulation (can cause singularities)
+                #this_object.suspendDynamics()
+
+                # Locate the nearest adjacent space to place the object
+                newOrientation = near_object.worldOrientation
+                logger.debug( "\n near_object.worldOrientation IS %s\n this_object.worldOrientation IS %s\n newOrientation IS %s" %(str(near_object.worldOrientation), str(this_object.worldOrientation), str(newOrientation)) )
+                connectionPoints = self.connection_points(near_object.worldPosition, near_object.worldOrientation)
+                logger.debug( "POINTS: %s" %str(connectionPoints) )
+                newPosition = connectionPoints[0]
+                minDistance = this_object.getDistanceTo(connectionPoints[0])
+                for point in connectionPoints:
+                    if this_object.getDistanceTo(point) < minDistance:
+                        newPosition = point
+                        minDistance = this_object.getDistanceTo(point)
+                logger.debug( "\n near_object.worldPosition IS %s\n this_object.worldPosition IS %s\n newPosition IS %s" %(str(near_object.worldPosition), str(this_object.worldPosition), str(newPosition)) )
+
+                # Place object adjacent
+                this_object.worldOrientation = newOrientation
+                this_object.worldPosition = newPosition
+                #this_object.setLinearVelocity([0, 0, 0])
+                #this_object.setAngularVelocity([0, 0, 0])
+
+                # Parent the selected object to the target
+                this_object.setParent(near_object)
+                logger.debug( "OBJECT %s CONNECTED TO %s" %(this_object.name, near_object.name) )
+        else:
+            if obj_name:
+                near_objects = [obj for obj in blenderapi.persistantstorage().robotDict.keys() if obj.name == obj_name]
+                if not near_objects:
+                    logger.warning("no object named %s in %s"%(obj_name, str(blenderapi.persistantstorage().robotDict.keys()) ))
+                    near_object = None
+                else:
+                    near_object = near_objects[0]
+            else:
+                if len(this_object['ConnectedObjects']) > 0:
+                    near_object = this_object['ConnectedObjects'][-1]
+            if near_object is not None and near_object != '' and near_object in this_object['ConnectedObjects']:
+                # Restore Physics simulation (can cause singularities)
+                #this_object.restoreDynamics()
+                #this_object.setLinearVelocity([0, 0, 0])
+                #this_object.setAngularVelocity([0, 0, 0])
+
+                # Remove the parent
+                this_object.removeParent()
+
+                # Clear the object from connect status
+                this_object['ConnectedObjects'].remove(near_object)
+                near_object['ConnectedObjects'].remove(this_object)
+                logger.info("OBJECT %s DISCONNECTED FROM %s" %(near_object.name, this_object.name) )
