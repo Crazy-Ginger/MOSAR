@@ -203,6 +203,13 @@ class Spacecraft:
     def connect(self, mod_a, mod_a_port, mod_b, mod_b_port):
         """Connects the 2 passed modules with the specified ports
         as orientation is going to be considered in future code it takes both ports"""
+
+        # checks the modules are not already connceted
+
+        if self.modules[mod_a].cons[mod_a_port] == mod_b:
+            if self.modules[mod_b].cons[mod_b_port] == mod_a:
+                return
+
         # checks that the ports are not already in use
         try:
             if self.modules[mod_a].cons[mod_a_port] is not None:
@@ -253,6 +260,8 @@ class Spacecraft:
             # move the modules into position and ensure they are there
             self.move_mod(mod_a, self.modules[mod_a].pos)
             self.move_mod(mod_b, self.modules[mod_b].pos)
+        # links the modules together
+        modCon.link(mod_a, mod_b)
 
     def connect_all(self, mod_id):
         """give a mod id, checks all adjacent positions and connects module to
@@ -290,6 +299,7 @@ class Spacecraft:
             return
 
         # disconnects port on other module
+        modCon.unlink(mod_id, self.modules[mod_id[.cons[port_id])
 
         for port in self.modules[self.modules[mod_id].cons[port_id]].cons:
             if port == mod_id:
@@ -714,7 +724,7 @@ class Spacecraft:
             # moves the module to the new position
             # path currently moves the module towards nearest module (oops)
             path = self.get_coord_path(path, unused[0])
-            print(popped_mod, "\n", path)
+            print(popped_mod)
 
             for coord in path:
                 print("moving to:", coord)

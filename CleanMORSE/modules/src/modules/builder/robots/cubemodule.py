@@ -1,5 +1,6 @@
 from morse.builder import *
 
+
 class CubeModule(Robot):
     """
     A template robot model for cubemodule, with a motion controller and a pose sensor.
@@ -28,10 +29,11 @@ class CubeModule(Robot):
         destination = Destination()
         destination.add_stream('socket')
         destination.add_service('socket')
-        destination.properties(Speed=2.0, Tolerance=0.05, RemainAtDestination = True)
+        destination.properties(Speed=2.0, Tolerance=0.05, RemainAtDestination = False)
         self.append(destination)
 
         # Optionally allow to move the robot with the keyboard
+
         if debug:
             keyboard = Keyboard()
             keyboard.properties(ControlType = 'Position')
