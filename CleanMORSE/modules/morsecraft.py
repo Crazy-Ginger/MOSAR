@@ -673,8 +673,8 @@ class Spacecraft:
                 "Goal and spacecraft contain different number of modules")
 
         tmp_order = current_order.copy()
-        # finds where each module type need to be moved
 
+        # finds where each module type need to be moved
         for pos in range(len(goal_order)):
             try:
                 index = [
@@ -709,7 +709,6 @@ class Spacecraft:
 
         # splits the row in 2
         current_order = [current_order]
-
         for i in range(len(current_order[0]) // 2):
             self.disconnect_all(current_order[0][0])
 
@@ -746,13 +745,13 @@ class Spacecraft:
         print("beginning bubble")
         # bubble sort both rows
 
+        # sort each row seperately (could run in parallel?)
         for sub_list in current_order:
             # sorts each run
-
             for i in range(len(sub_list) - 1):
                 for j in range(0, len(sub_list) - i - 1):
-                    if final_places[sub_list[j]] > final_places[sub_list[j +
-                                                                         1]]:
+                    if final_places[sub_list[j]] > final_places[sub_list[j+1]]:
+                        # final positions of each module
                         pos1 = self.modules[sub_list[j]].pos
                         pos2 = self.modules[sub_list[j + 1]].pos
                         self.disconnect_all(sub_list[j + 1])
@@ -764,10 +763,9 @@ class Spacecraft:
                         # move the second mod along to pos of 1st
                         # move 1st mod down into position
 
-                        self.connect_all(sub_list[j + 1])
+                        self.connect_all(sub_list[j+1])
                         self.connect_all(sub_list[j])
-                        sub_list[j], sub_list[j + 1] = sub_list[j +
-                                                                1], sub_list[j]
+                        sub_list[j], sub_list[j+1] = sub_list[j+1], sub_list[j]
 
         # connect structure together
 
@@ -854,5 +852,4 @@ class Spacecraft:
             self.display()
 
             if not sucess:
-                raise ValueError(
-                    "Didn't connect the module properly, rewrite it dipshit")
+                raise ValueError("Growing failed. Sucess:", sucess)
