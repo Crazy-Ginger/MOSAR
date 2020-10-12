@@ -10,12 +10,13 @@
     <li>Add true support for orientation of non-cuboid modules (path finding doesn't change the orientation)</li>
     <li>Add controllers for module orientation to modControl and in morsecraft</li>
 </ul>
-
-<h1>Requirements:</h1>
+<br/>
+<h2>Requirements:</h2>
 <ul>
     <li><a href="https://github.com/morse-simulator/morse">morse simulator</a></li>
     <li><a href="https://www.blender.org/download/releases/2-79">blender 2.79</a>>=</li>
     <li><a href="https://www.python.org/downloads/release/python-350/">python3.5</a> (or version used to build blender)</li>
 </ul>
+<br/>
+<h2>Installation:</h2>
 
-<

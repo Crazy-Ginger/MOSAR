@@ -3,8 +3,9 @@
 import math
 import operator as op
 
-import jsonpickle as pickler
 import numpy as np
+
+import jsonpickle as pickler
 from scripts import modControl as modCon
 
 # consider using "uncertainties" package to deal with inaccuracies in coordinate system/simulation
@@ -365,7 +366,8 @@ class Spacecraft:
         return visited
 
     def get_mod_path(self, root, goal):
-        """returns path from root mod_id and goal mod_id"""
+        """a dijkstra implementation
+        returns path from root mod_id and goal mod_id as module ids"""
         to_visit = {root}
         est_cost = {root: 0}
         final_cost = {}
@@ -380,7 +382,6 @@ class Spacecraft:
                 if current_node is None or est_cost[mod] < current_score:
                     current_node = mod
                     current_score = est_cost[mod]
-            # and current_node[-self.tag_len - 1] != "-"
             # checks if reached goal
 
             if current_node == goal:
@@ -390,10 +391,7 @@ class Spacecraft:
                     current_node = back_track[current_node]
                     path.append(current_node)
                 # if goal[-self._mod_type:] == path[0][-self._mod_type:]:
-                # del path[0]
                 path.reverse()
-                # key = current_node
-                # self.goal.modules[key.replace("_", "-")] = self.goal.modules.pop(current_node)
 
                 return path
 
@@ -733,8 +731,7 @@ class Spacecraft:
             final_pose = np.round(final_pose, 3)
             print("final pos:", final_pose)
             # connects to row above/below
-            self.connect(popped_mod, unused[0], current_order[0][-i - 1],
-                         base_cons[unused[0]])
+            self.connect(popped_mod, unused[0], current_order[0][-i - 1], base_cons[unused[0]])
             # connect to modules on it's own rown
             self.connect_all(popped_mod)
 
@@ -755,6 +752,8 @@ class Spacecraft:
                         pos1 = self.modules[sub_list[j]].pos
                         pos2 = self.modules[sub_list[j + 1]].pos
                         self.disconnect_all(sub_list[j + 1])
+
+
                         self.disconnect_all(sub_list[j])
 
                         self.move_mod(sub_list[j], )
