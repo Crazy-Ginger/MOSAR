@@ -1,2 +1,0 @@
-https://www.openrobots.org/morse/doc/stable/user/advanced_tutorials/a_journey_to_a_new_simulation.html
-

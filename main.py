@@ -3,11 +3,18 @@ from subprocess import DEVNULL, Popen
 from time import sleep
 
 import pymorse
-from morsecraft import Spacecraft as Craft
-from scripts import modControl
+from modules.morsecraft import Spacecraft as Craft
+from modules.scripts import modControl
+
+__authors__ = ["Mark A Post", "Rebecca Wardle"]
+__copyright__ = "Copyright 2020 Rebecca Wardle"
+__license__ = "MIT License"
+__credit__ = ["Mark A Post", "Rebecca Wardle"]
+__version__ = "0.5"
+
+"""Manipulates the modules in morse to a new structure, rewrite to change order"""
 
 # launches the simulation
-# for demonstration, comment for bug testing
 # SIMULATION = Popen(["morse", "run", "modules-indoor.py"], stdout=DEVNULL)
 morse = None
 
@@ -33,8 +40,8 @@ def main():
     craft.create_goal()
 
     mod_ids = [
-        mod_id for mod_id in dir(morse) if mod_id[:3] == 'mod'
-        and mod_id[3:6].isnumeric() and mod_id[7:].isalpha()
+        mod_id for mod_id in dir(morse) if mod_id[:3] == 'mod' and
+        mod_id[3:6].isnumeric() and mod_id[7:].isalpha()
     ]
     print(mod_ids)
 
