@@ -7,6 +7,7 @@ Requirements:
 - [Morse Simulator](https://github.com/morse-simulator/morse)
 - [Blender v2.79](https://www.blender.org/download/releases/2-79)>=
 - [Python 3.5](https://www.python.org/downloads/release/python-350/) or the same python version used to build blender
+- Linux based OS as MORSE has not been written to run on Windows
 
 Installation:
 -------------
