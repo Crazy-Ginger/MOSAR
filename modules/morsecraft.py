@@ -10,7 +10,11 @@ import jsonpickle as pickler
 from .craftmodule import Module as Module
 from .scripts import modControl as modCon
 
-# consider using "uncertainties" package to deal with inaccuracies in coordinate system/simulation
+__authors__ = ["Mark A Post", "Rebecca Wardle"]
+__copyright__ = "Copyright 2020 Rebecca Wardle"
+__license__ = "MIT License"
+__credit__ = ["Mark A Post", "Rebecca Wardle", "Robert Fitch", "Daniela Rus", "Zachary Butler"]
+__version__ = "0.5"
 
 
 class Spacecraft:

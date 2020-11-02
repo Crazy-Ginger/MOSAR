@@ -3,7 +3,10 @@
 from numpy import array, round
 
 __author__ = "Rebecca Wardle"
-
+__copyright__ = "Copyright 2020 Rebecca Wardle"
+__license__ = "MIT License"
+__credit__ = ["Rebecca Wardle"]
+__version__ = "0.5"
 
 class Module:
     """A module class that contains:

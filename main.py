@@ -6,6 +6,12 @@ import pymorse
 from modules.morsecraft import Spacecraft as Craft
 from modules.scripts import modControl
 
+__authors__ = ["Mark A Post", "Rebecca Wardle"]
+__copyright__ = "Copyright 2020 Rebecca Wardle"
+__license__ = "MIT License"
+__credit__ = ["Mark A Post", "Rebecca Wardle"]
+__version__ = "0.5"
+
 # launches the simulation
 # for demonstration, comment for bug testing
 # SIMULATION = Popen(["morse", "run", "modules-indoor.py"], stdout=DEVNULL)
