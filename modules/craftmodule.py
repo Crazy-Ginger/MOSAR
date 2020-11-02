@@ -8,10 +8,11 @@ __license__ = "MIT License"
 __credit__ = ["Rebecca Wardle"]
 __version__ = "0.5"
 
+
 class Module:
     """A module class that contains:
-        position, rotation, connections, type, dimensions, id
-    used within spacecraft"""
+    position, rotation, connections, type, dimensions,
+    id used within spacecraft"""
     def __init__(self, mod_id, dimensions=(0.1, 0.1, 0.1), position=(0, 0, 0)):
         self.cons = [None] * len(dimensions) * 2
         self.rotation = [1] + [0] * 3

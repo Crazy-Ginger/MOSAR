@@ -11,7 +11,6 @@ __copyright__ = "Copyright 2020 Rebecca Wardle"
 __license__ = "MIT License"
 __credit__ = ["Mark A Post", "Rebecca Wardle"]
 __version__ = "0.5"
-
 """Manipulates the modules in morse to a new structure, rewrite to change order"""
 
 # launches the simulation
@@ -40,8 +39,8 @@ def main():
     craft.create_goal()
 
     mod_ids = [
-        mod_id for mod_id in dir(morse) if mod_id[:3] == 'mod' and
-        mod_id[3:6].isnumeric() and mod_id[7:].isalpha()
+        mod_id for mod_id in dir(morse) if mod_id[:3] == 'mod'
+        and mod_id[3:6].isnumeric() and mod_id[7:].isalpha()
     ]
     print(mod_ids)
 

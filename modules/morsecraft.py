@@ -13,12 +13,19 @@ from .scripts import modControl as modCon
 __authors__ = ["Mark A Post", "Rebecca Wardle"]
 __copyright__ = "Copyright 2020 Rebecca Wardle"
 __license__ = "MIT License"
-__credit__ = ["Mark A Post", "Rebecca Wardle", "Robert Fitch", "Daniela Rus", "Zachary Butler"]
+__credit__ = [
+    "Mark A Post",
+    "Rebecca Wardle",
+    "Robert Fitch",
+    "Daniela Rus",
+    "Zachary Butler",
+]
 __version__ = "0.5"
 
 
 class Spacecraft:
     """A generic spacecraft class that contains a dictionary of modules and connections"""
+
     def __init__(self, tag_length=3, precision=0.01, is_goal=False):
         self._root = None
         self.modules = {}
@@ -27,11 +34,7 @@ class Spacecraft:
         self.precision = precision
         self.is_goal = is_goal
 
-    def add_mod(self,
-                new_id,
-                position=(0, 0, 0),
-                size=(0.1, 0.1, 0.1),
-                rotation=(0, 0, 0)):
+    def add_mod(self, new_id, position=(0, 0, 0), size=(0.1, 0.1, 0.1), rotation=(0, 0, 0)):
         """Add an unconnected module to the craft dictionary"""
         new_mod = Module(new_id, size, position)
         new_mod.type = new_id[-self.tag_len:]
@@ -47,7 +50,7 @@ class Spacecraft:
             cos(x) * cos(y) * cos(z) + sin(x) * sin(y) * sin(z),
             sin(x) * cos(y) * cos(z) - cos(x) * sin(y) * sin(z),
             cos(x) * sin(y) * cos(z) + sin(x) * cos(y) * sin(z),
-            cos(x) * cos(y) * sin(z) - sin(x) * sin(y) * cos(z)
+            cos(x) * cos(y) * sin(z) - sin(x) * sin(y) * cos(z),
         ]
         self.modules[str(new_id)] = new_mod
 
@@ -62,7 +65,7 @@ class Spacecraft:
             cos(x) * cos(y) * cos(z) + sin(x) * sin(y) * sin(z),
             sin(x) * cos(y) * cos(z) - cos(x) * sin(y) * sin(z),
             cos(x) * sin(y) * cos(z) + sin(x) * cos(y) * sin(z),
-            cos(x) * cos(y) * sin(z) - sin(x) * sin(y) * cos(z)
+            cos(x) * cos(y) * sin(z) - sin(x) * sin(y) * cos(z),
         ]
         # if rotation is added to modController uncomment to implement the effects on the simulator
         # modCon.set_rotation(rotation)
@@ -84,25 +87,40 @@ class Spacecraft:
         z_diff = fixed_mod.dim[2] / 2 + moving_mod.dim[2] / 2
 
         # np.array allows port_id to index the correct offset
-        ports = [[-x_diff, 0, 0], [0, y_diff, 0], [x_diff, 0, 0],
-                 [0, -y_diff, 0], [0, 0, z_diff], [0, 0, -z_diff]]
+        ports = [
+            [-x_diff, 0, 0],
+            [0, y_diff, 0],
+            [x_diff, 0, 0],
+            [0, -y_diff, 0],
+            [0, 0, z_diff],
+            [0, 0, -z_diff],
+        ]
 
         # convert quaternions to rotation matrix which can be applied upon the ports
         q = fixed_mod.rotation
-        rotation = np.array([[
-            1 - 2 * (q[2]**2 + q[3]**2), 2 * (q[1] * q[2] - q[3] * q[0]),
-            2 * (q[1] * q[3] + q[2] * q[0]), 0
-        ],
-                             [
-                                 2 * (q[1] * q[2] + q[3] * q[0]),
-                                 1 - 2 * (q[1]**2 + q[3]**2),
-                                 2 * (q[2] * q[3] - q[1] * q[0]), 0
-                             ],
-                             [
-                                 2 * (q[1] * q[3] - q[2] * q[0]),
-                                 2 * (q[2] * q[3] + q[1] * q[0]),
-                                 1 - 2 * (q[1]**2 + q[2]**2), 0
-                             ], [0, 0, 0, 1]])
+        rotation = np.array(
+            [
+                [
+                    1 - 2 * (q[2] ** 2 + q[3] ** 2),
+                    2 * (q[1] * q[2] - q[3] * q[0]),
+                    2 * (q[1] * q[3] + q[2] * q[0]),
+                    0,
+                ],
+                [
+                    2 * (q[1] * q[2] + q[3] * q[0]),
+                    1 - 2 * (q[1] ** 2 + q[3] ** 2),
+                    2 * (q[2] * q[3] - q[1] * q[0]),
+                    0,
+                ],
+                [
+                    2 * (q[1] * q[3] - q[2] * q[0]),
+                    2 * (q[2] * q[3] + q[1] * q[0]),
+                    1 - 2 * (q[1] ** 2 + q[2] ** 2),
+                    0,
+                ],
+                [0, 0, 0, 1],
+            ]
+        )
 
         # select the port from port_id
         diff = np.array(ports[port_id] + [0])
@@ -125,11 +143,9 @@ class Spacecraft:
                 mul = -1
             # sets only one dim to the offset the modules would be
             difference = [0] * len(mod_a.pos)
-            difference[i % len(mod_a.pos)] = mul * ((mod_a.dim[i % 3] / 2) +
-                                                    (mod_b.dim[i % 3] / 2))
+            difference[i % len(mod_a.pos)] = mul * ((mod_a.dim[i % 3] / 2) + (mod_b.dim[i % 3] / 2))
 
-            mod_position = tuple(
-                map(op.add, tuple(mod_a.pos), tuple(difference)))
+            mod_position = tuple(map(op.add, tuple(mod_a.pos), tuple(difference)))
 
             # refactor into single line without for loop (using sum)
             to_return = True
@@ -159,24 +175,41 @@ class Spacecraft:
 
     def get_port(self, mod, base_port):
         """returns the actual port to connect modules with when passed mod and the port to connect without rotation"""
-        base_direcs = np.array([[-1, 0, 0, 0], [0, 1, 0, 0], [1, 0, 0, 0],
-                                [0, -1, 0, 0], [0, 0, 1, 0], [0, 0, -1, 0]])
+        base_direcs = np.array(
+            [
+                [-1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [1, 0, 0, 0],
+                [0, -1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, -1, 0],
+            ]
+        )
         direction = np.array(base_direcs[base_port])
         q = self.modules[mod].rotation
-        rotation = np.array([[
-            1 - 2 * (q[2]**2 + q[3]**2), 2 * (q[1] * q[2] - q[3] * q[0]),
-            2 * (q[1] * q[3] + q[2] * q[0]), 0
-        ],
-                             [
-                                 2 * (q[1] * q[2] + q[3] * q[0]),
-                                 1 - 2 * (q[1]**2 + q[3]**2),
-                                 2 * (q[2] * q[3] - q[1] * q[0]), 0
-                             ],
-                             [
-                                 2 * (q[1] * q[3] - q[2] * q[0]),
-                                 2 * (q[2] * q[3] + q[1] * q[0]),
-                                 1 - 2 * (q[1]**2 + q[2]**2), 0
-                             ], [0, 0, 0, 1]])
+        rotation = np.array(
+            [
+                [
+                    1 - 2 * (q[2] ** 2 + q[3] ** 2),
+                    2 * (q[1] * q[2] - q[3] * q[0]),
+                    2 * (q[1] * q[3] + q[2] * q[0]),
+                    0,
+                ],
+                [
+                    2 * (q[1] * q[2] + q[3] * q[0]),
+                    1 - 2 * (q[1] ** 2 + q[3] ** 2),
+                    2 * (q[2] * q[3] - q[1] * q[0]),
+                    0,
+                ],
+                [
+                    2 * (q[1] * q[3] - q[2] * q[0]),
+                    2 * (q[2] * q[3] + q[1] * q[0]),
+                    1 - 2 * (q[1] ** 2 + q[2] ** 2),
+                    0,
+                ],
+                [0, 0, 0, 1],
+            ]
+        )
         rotated = np.round(base_direcs.dot(rotation))
 
         # now check which port has the same vector as the base port
@@ -184,9 +217,7 @@ class Spacecraft:
         for index in range(len(base_direcs)):
             if np.array_equal(rotated[index], direction):
                 return index
-        raise ValueError(
-            "Apperntly no ports point in that direction someone is wrong (blame the writer)"
-        )
+        raise ValueError("Apperntly no ports point in that direction someone is wrong (blame the writer)")
 
     def connect(self, mod_a, mod_a_port, mod_b, mod_b_port):
         """Connects the 2 passed modules with the specified ports
@@ -201,41 +232,33 @@ class Spacecraft:
         # checks that the ports are not already in use
         try:
             if self.modules[mod_a].cons[mod_a_port] is not None:
-                raise ValueError(
-                    "The port %d on %s is already connected to %s" %
-                    (mod_a_port, mod_a, self.modules[mod_a].cons[mod_a_port]))
+                raise ValueError("The port %d on %s is already connected to %s" % (mod_a_port, mod_a, self.modules[mod_a].cons[mod_a_port]))
         except IndexError:
-            raise IndexError("Port %d does not exist in this dimension" %
-                             (mod_a_port))
+            raise IndexError("Port %d does not exist in this dimension" % (mod_a_port))
 
         try:
             if self.modules[mod_b].cons[mod_b_port] is not None:
-                raise ValueError("The port %d on %s is already in use" %
-                                 (mod_b_port, mod_b))
+                raise ValueError("The port %d on %s is already in use" % (mod_b_port, mod_b))
         except IndexError:
-            raise IndexError("Port %d does not exist in this dimension" %
-                             (mod_b_port))
+            raise IndexError("Port %d does not exist in this dimension" % (mod_b_port))
 
         # give postitions to connected module
 
         if self.is_goal:
             self.modules[mod_a].pos = (0, 0, 0)
-            self.modules[mod_b].pos = self.get_new_position(
-                mod_a, mod_b, mod_a_port)
-        elif (self.modules[mod_a].pos is not None) and (self.modules[mod_b].pos
-                                                        is not None):
+            self.modules[mod_b].pos = self.get_new_position(mod_a, mod_b, mod_a_port)
+        elif (self.modules[mod_a].pos is not None) and (
+            self.modules[mod_b].pos is not None
+        ):
             # checks modules are next to each other
 
             if self.check_adjacency(mod_a, mod_b) is None:
-                raise ValueError("Modules %s, %s are not adjecent" %
-                                 (mod_a, mod_b))
+                raise ValueError("Modules %s, %s are not adjecent" % (mod_a, mod_b))
         elif self.modules[mod_a].pos is not None:
-            self.modules[mod_b].pos = self.get_new_position(
-                mod_a, mod_b, mod_a_port)
+            self.modules[mod_b].pos = self.get_new_position(mod_a, mod_b, mod_a_port)
 
         elif self.modules[mod_b].pos is not None:
-            self.modules[mod_a].pos = self.get_new_position(
-                mod_b, mod_a, mod_b_port)
+            self.modules[mod_a].pos = self.get_new_position(mod_b, mod_a, mod_b_port)
 
         self.modules[mod_a].cons[mod_a_port] = mod_b
         self.modules[mod_b].cons[mod_b_port] = mod_a
@@ -256,9 +279,7 @@ class Spacecraft:
         adjancent modules"""
 
         if self.modules[mod_id].pos is None:
-            raise IndexError(
-                "%s does not have a position so it not yet connected" %
-                (mod_id))
+            raise IndexError("%s does not have a position so it not yet connected" % (mod_id))
 
         for mod in self.modules:
             if mod != mod_id:
@@ -400,7 +421,7 @@ class Spacecraft:
 
     def import_from_file(self, file_name, goal=True):
         """pass json file to import design (have to redifine craft if importing)"""
-        with open(file_name, 'r') as file:
+        with open(file_name, "r") as file:
             data = file.read().replace("\n", "")
 
         if goal is False:
@@ -443,24 +464,17 @@ class Spacecraft:
         # break
         # offset = np.round(clearance * np.sign(self.modules[mod_path[0]].pos[index] - self.modules[mod_path[1]].pos[index]), 4)
 
-        diff = np.round(
-            list(
-                map(op.sub, list(self.modules[mod_path[0]].pos),
-                    list(self.modules[mod_path[1]].pos))), 3)
+        diff = np.round(list(map(op.sub, list(self.modules[mod_path[0]].pos), list(self.modules[mod_path[1]].pos),)), 3)
 
         for index in range(len(diff)):
             if abs(diff[index]) >= 0.1:
                 axis_of_movement = index
-                offset = np.round(
-                    clearance * np.sign(self.modules[mod_path[0]].pos[index] -
-                                        self.modules[mod_path[1]].pos[index]),
-                    4)
+                offset = np.round(clearance * np.sign(self.modules[mod_path[0]].pos[index] - self.modules[mod_path[1]].pos[index]), 4)
 
         if len(mod_path) > 2:
             diff = np.round(
                 list(
-                    map(op.sub, list(self.modules[mod_path[1]].pos),
-                        list(self.modules[mod_path[2]].pos))), 3)
+                    map(op.sub, list(self.modules[mod_path[1]].pos), list(self.modules[mod_path[2]].pos))), 3)
 
             for index in range(len(diff)):
                 if abs(diff[index]) >= 0.1:
@@ -472,18 +486,10 @@ class Spacecraft:
 
         for index in range(2, len(mod_path)):
             diff = np.round(
-                list(
-                    map(op.sub, self.modules[mod_path[index - 1]].pos,
-                        self.modules[mod_path[index]].pos)), 3)
+                list(map(op.sub, self.modules[mod_path[index - 1]].pos, self.modules[mod_path[index]].pos)), 3)
 
             if abs(diff[axis_of_movement]) > 0.1:
-                path = np.concatenate([
-                    path,
-                    np.array([
-                        list(np.round(self.modules[mod_path[index - 1]].pos,
-                                      2))
-                    ])
-                ])
+                path = np.concatenate([path, np.array([list(np.round(self.modules[mod_path[index - 1]].pos, 2))])])
 
                 for index in range(len(diff)):
                     if abs(diff[index]) > clearance:
@@ -529,20 +535,17 @@ class Spacecraft:
 
                 if i == len(path) - 1:
                     path[i][dim] += np.round(
-                        clearance * np.sign(path[i][dim] - path[i - 1][dim]),
-                        4)
+                        clearance * np.sign(path[i][dim] - path[i - 1][dim]), 4
+                    )
                 else:
                     try:
-                        cur_mod = mod_path[np.where(
-                            mod_coords.all() == path[i])[0][0]]
+                        cur_mod = mod_path[np.where(mod_coords.all() == path[i])[0][0]]
                     except IndexError:
                         print(
                             "%i coordinates don't appear to be related to another module in the path"
-                            % (path[i]))
-                    offset = np.round(
-                        (clearance + self.modules[cur_mod].dim[dim] / 2 +
-                         moving_mod.dim[dim] / 2) *
-                        np.sign(path[i][dim] - path[i - 1][dim]), 4)
+                            % (path[i])
+                        )
+                    offset = np.round((clearance + self.modules[cur_mod].dim[dim] / 2 + moving_mod.dim[dim] / 2) * np.sign(path[i][dim] - path[i - 1][dim]),4)
                     path[i][dim] += offset
 
         path = np.concatenate((path, np.array([final_pos])))
@@ -632,8 +635,7 @@ class Spacecraft:
                 self.move_mod(current_node, coords)
 
             # connect module to chain (1 needs to be replaced to take account of modules need to be in certain orientations)
-            self.connect(current_node, port_id, root,
-                         self.get_port(base_cons[port_id]))
+            self.connect(current_node, port_id, root, self.get_port(base_cons[port_id]))
             moved.append(current_node)
             to_move.remove(current_node)
             root = current_node
@@ -648,14 +650,13 @@ class Spacecraft:
 
         # get order for goal then take only module types
         goal_order = self.get_goal_order()
-        goal_order = [elem[-self.tag_len:] for elem in goal_order]
+        goal_order = [elem[-self.tag_len :] for elem in goal_order]
 
         final_places = {}
 
         if len(goal_order) != len(current_order):
             # handle this (write later)
-            raise ValueError(
-                "Goal and spacecraft contain different number of modules")
+            raise ValueError("Goal and spacecraft contain different number of modules")
 
         tmp_order = current_order.copy()
 
@@ -663,13 +664,10 @@ class Spacecraft:
         for pos in range(len(goal_order)):
             try:
                 index = [
-                    idx for idx, s in enumerate(tmp_order)
-
-                    if goal_order[pos] in s
+                    idx for idx, s in enumerate(tmp_order) if goal_order[pos] in s
                 ][0]
             except IndexError:
-                raise IndexError("%s doesn't exist in craft" %
-                                 (goal_order[pos]))
+                raise IndexError("%s doesn't exist in craft" % (goal_order[pos]))
             final_places[tmp_order[index]] = pos
             del tmp_order[index]
 
@@ -698,7 +696,7 @@ class Spacecraft:
             self.disconnect_all(current_order[0][0])
 
             popped_mod = current_order[0].pop(0)
-            path = current_order[0][-i - 1::-1] + [popped_mod]
+            path = current_order[0][-i - 1 :: -1] + [popped_mod]
 
             if i == 0:
                 current_order.append([popped_mod])
@@ -734,23 +732,22 @@ class Spacecraft:
             # sorts each row
             for i in range(len(sub_list) - 1):
                 for j in range(0, len(sub_list) - i - 1):
-                    if final_places[sub_list[j]] > final_places[sub_list[j+1]]:
+                    if final_places[sub_list[j]] > final_places[sub_list[j + 1]]:
                         # final positions of each module
                         pos1 = self.modules[sub_list[j]].pos
                         pos2 = self.modules[sub_list[j + 1]].pos
                         self.disconnect_all(sub_list[j + 1])
 
-
                         self.disconnect_all(sub_list[j])
-                        self.move_mod(sub_list[j], )
+                        self.move_mod(sub_list[j],)
                         # take first mod, get unused dimension
                         # move the first mod up and then ontop of the second module
                         # move the second mod along to pos of 1st
                         # move 1st mod down into position
 
-                        self.connect_all(sub_list[j+1])
+                        self.connect_all(sub_list[j + 1])
                         self.connect_all(sub_list[j])
-                        sub_list[j], sub_list[j+1] = sub_list[j+1], sub_list[j]
+                        sub_list[j], sub_list[j + 1] = sub_list[j + 1], sub_list[j]
 
         # connect structure together
 
@@ -759,16 +756,14 @@ class Spacecraft:
 
         # merge sorted rows
 
-        if final_places[current_order[0][0]] < final_places[current_order[1]
-                                                            [0]]:
+        if final_places[current_order[0][0]] < final_places[current_order[1][0]]:
             root = current_order[0][0]
             del current_order[0][0]
         else:
             root = current_order[1][0]
             del current_order[1][0]
 
-        if final_places[current_order[0][-1]] > final_places[current_order[1]
-                                                             [-1]]:
+        if final_places[current_order[0][-1]] > final_places[current_order[1][-1]]:
             self.disconnect_all(root)
             self.connect(current_order[0][-1], 2, root, 0)
         else:
@@ -777,8 +772,7 @@ class Spacecraft:
         final_order = [root]
 
         while len(current_order[0]) > 0 and len(current_order[1]) > 0:
-            if final_places[current_order[0][0]] < final_places[
-                    current_order[1][0]]:
+            if final_places[current_order[0][0]] < final_places[current_order[1][0]]:
                 self.disconnect_all(current_order[0][0])
                 self.connect(root, 2, current_order[0][0], 0)
                 root = current_order[0][0]
@@ -810,8 +804,8 @@ class Spacecraft:
 
         for idx in range(len(order)):
             base_cons = [2, 3, 0, 1, 5, 4]
-            mod_type = order[idx][-self.tag_len:]
-            path = order[idx + 1:]
+            mod_type = order[idx][-self.tag_len :]
+            path = order[idx + 1 :]
 
             if idx == 0:
                 self.disconnect_all(order[idx])
@@ -828,8 +822,9 @@ class Spacecraft:
             for port in range(len(self.goal.modules[last_mod].cons)):
                 if self.goal.modules[last_mod].cons[port] is None:
                     continue
-                elif self.goal.modules[last_mod].cons[port][
-                        -self.tag_len:] == mod_type:
+                elif (
+                    self.goal.modules[last_mod].cons[port][-self.tag_len :] == mod_type
+                ):
                     self.disconnect_all(order[idx])
                     self.connect(order[idx], base_cons[port], path[-1], port)
                     sucess = True
