@@ -3,8 +3,8 @@ from subprocess import DEVNULL, Popen
 from time import sleep
 
 import pymorse
-from morsecraft import Spacecraft as Craft
-from scripts import modControl
+from modules.morsecraft import Spacecraft as Craft
+from modules.scripts import modControl
 
 # launches the simulation
 # for demonstration, comment for bug testing
@@ -33,8 +33,8 @@ def main():
     craft.create_goal()
 
     mod_ids = [
-        mod_id for mod_id in dir(morse) if mod_id[:3] == 'mod'
-        and mod_id[3:6].isnumeric() and mod_id[7:].isalpha()
+        mod_id for mod_id in dir(morse) if mod_id[:3] == 'mod' and
+        mod_id[3:6].isnumeric() and mod_id[7:].isalpha()
     ]
     print(mod_ids)
 
