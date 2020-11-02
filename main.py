@@ -12,8 +12,9 @@ __license__ = "MIT License"
 __credit__ = ["Mark A Post", "Rebecca Wardle"]
 __version__ = "0.5"
 
+"""Manipulates the modules in morse to a new structure, rewrite to change order"""
+
 # launches the simulation
-# for demonstration, comment for bug testing
 # SIMULATION = Popen(["morse", "run", "modules-indoor.py"], stdout=DEVNULL)
 morse = None
 

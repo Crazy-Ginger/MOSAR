@@ -1,5 +1,5 @@
 #!/usr/bin/env python3.5
-"""Spacecraft made up of Modules use in conjunction with morse for heterogeneous systems"""
+"""Spacecraft made up of Modules used in conjunction with morse for simulation"""
 import math
 import operator as op
 
