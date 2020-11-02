@@ -5,7 +5,7 @@ Requirements:
 ------------
 
 - [Morse Simulator](https://github.com/morse-simulator/morse)
-- [Blender v2.79>=](https://www.blender.org/download/releases/2-79)
+- [Blender v2.79](https://www.blender.org/download/releases/2-79)>=
 - [Python 3.5](https://www.python.org/downloads/release/python-350/) or the same python version used to build blender
 
 Installation:
@@ -17,6 +17,12 @@ To install the cube modules:
 
     morse import modules
 
-Then to run the simulation
+Then to etablish the simulation
 
     morse run modules indoor.py
+
+
+---------
+
+Modules can be designated with different colours and types.
+The modules are then loaded into [`spacecraft`] class which stores connections, position, rotation, type and more. This class can be passed a goal structure and will rearrange the modules to this structure.

@@ -8,3 +8,5 @@ ToDo:
 - Set CleanMORSE as the main repo (remove BadMORSE and others)
 - Add true support for orientation of non-cuboid modules (path finding doesn't change the orientation)
 - Add controllers for module orientation to modControl and in morsecraft
+- Add support for different sized modules
+- Add support for modules with more than 6 ports, this requires rewritting everything as a basic assumtion is that each module has only 6 ports and that certain ports will face others when the modules are facing the same direction
