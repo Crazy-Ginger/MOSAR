@@ -1,16 +1,5 @@
 # MOSAR
-
-<h1>ToDo:</h1>
-<ul>
-    <li>Write up proper README</li>
-    <li>Fix melt, sort grow</li>
-    <li>Properly format morsecraft.py</li>
-    <li>Set up repository as a virtual environment, auto-install dependancies</li>
-    <li>Set CleanMORSE as the main repo (remove BadMORSE and others)</li>
-    <li>Add true support for orientation of non-cuboid modules (path finding doesn't change the orientation)</li>
-    <li>Add controllers for module orientation to modControl and in morsecraft</li>
-</ul>
-<br/>
+This is a program that rearranges cuboid robots using the Melt, Sort, Grow algorithm laid out in: <a href="http://groups.csail.mit.edu/drl/publications/papers/MeltSortGrow.pdf">Reconfiguration Planning for Heterogeneous Self-Reconfiguring Robots</a> . It is written exclusively in python and uses the MORSE simulator to demonstrate the algorithm.
 <h2>Requirements:</h2>
 <ul>
     <li><a href="https://github.com/morse-simulator/morse">morse simulator</a></li>
@@ -19,4 +8,12 @@
 </ul>
 <br/>
 <h2>Installation:</h2>
-
+This guide assumes that you have blender 2.79 installed and running as well as a properly configured MORSE setup. This can be difficult as even the MORSE page doens't mention that blender 2.79 is required as from version 2.80 they removed the game engine that MORSE uses to function.
+To install the cube modules:
+```bash
+morse import modules
+```
+Then to run the simulation
+```bash
+morse run modules indoor.py
+```

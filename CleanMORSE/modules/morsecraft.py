@@ -346,7 +346,7 @@ class Spacecraft:
             visited.add(current_node)
 
     def get_goal_order(self):
-        """return the goal order using bfs"""
+        """return the goal order using BFS"""
         root, dump = self.goal.get_isolated_mod(next(iter(self.goal.modules)))
         to_visit = [root]
         visited = []
@@ -744,7 +744,7 @@ class Spacecraft:
 
         # sort each row seperately (could run in parallel?)
         for sub_list in current_order:
-            # sorts each run
+            # sorts each row
             for i in range(len(sub_list) - 1):
                 for j in range(0, len(sub_list) - i - 1):
                     if final_places[sub_list[j]] > final_places[sub_list[j+1]]:
@@ -755,7 +755,6 @@ class Spacecraft:
 
 
                         self.disconnect_all(sub_list[j])
-
                         self.move_mod(sub_list[j], )
                         # take first mod, get unused dimension
                         # move the first mod up and then ontop of the second module
