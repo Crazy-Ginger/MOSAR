@@ -20,11 +20,11 @@ __credit__ = [
     "Daniela Rus",
     "Zachary Butler",
 ]
-__version__ = "0.5"
+__version__ = "-0.1"
 
 
 class Spacecraft:
-    """A generic spacecraft class that contains a dictionary of modules and connections"""
+    """A spacecraft class it stores a dictionary of modules and manages their connections and rearrangement"""
 
     def __init__(self, tag_length=3, precision=0.01, is_goal=False):
         self._root = None
@@ -302,26 +302,29 @@ class Spacecraft:
         """takes a module id and port number and disconnects that port"""
 
         if self.modules[mod_id].cons[port_id] is None:
-            # will now just accept to allow for batch disconnects
-            # raise ValueError("Port %d on module: %s is not connected" % (port_id, mod_id))
-
-            return
+            raise ValueError("Port %d on module: %s is not connected" % (port_id, mod_id))
 
         # disconnects port on other module
         modCon.unlink(mod_id, self.modules[mod_id].cons[port_id])
-
-        for port in self.modules[self.modules[mod_id].cons[port_id]].cons:
-            if port == mod_id:
-                port = None
+        flag = False
+        print(self.modules[mod_id].cons[port_id], ":", self.modules[self.modules[mod_id].cons[port_id]].cons)
+        print("porting")
+        for i in range(len(self.modules[self.modules[mod_id].cons[port_id]].cons)):
+            if self.modules[self.modules[mod_id].cons[port_id]].cons[i] == mod_id:
+                self.modules[self.modules[mod_id].cons[port_id]].cons[i] = None
+                flag = True
+        if not flag:
+            raise RuntimeWarning("%s was not connected to %s in both directions" % (mod_id, self.modules[mod_id].cons[port_id]))
         self.modules[mod_id].cons[port_id] = None
+        print("done disconnecting")
 
     def disconnect_all(self, mod_id):
-        """disconnects module from all connections"""
+        """loops through all connections of a given module and if connected runs disconnect"""
         # add a way to avoid disconnect from arm/tug
 
         for port_id in range(len(self.modules[mod_id].cons)):
-            self.disconnect(mod_id, port_id)
-        # remove position for module so it can be repositioned
+            if self.modules[mod_id].cons[port_id] is not None:
+                self.disconnect(mod_id, port_id)
 
     def get_isolated_mod(self, root):
         """gets unconnected module from root and path from root according to BFS"""

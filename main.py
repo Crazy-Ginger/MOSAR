@@ -49,7 +49,7 @@ def main():
         position = [position["x"]] + [position["y"]] + [position["z"]]
         craft.add_mod(mod_id, position=tuple(position))
         craft.goal.add_mod(mod_id)
-        print(mod_id, ":", craft.modules[mod_id].pos)
+        # print(mod_id, ":", craft.modules[mod_id].pos)
     print("Added modules to craft")
 
     for indx in range(1, len(mod_ids)):
@@ -62,8 +62,24 @@ def main():
 
     for mod in mod_ids:
         craft.connect_all(mod)
-        print(craft.modules[mod].cons)
+        print(mod, ": ", craft.modules[mod].cons)
     print("connected chain")
+
+    mod1 = mod_ids[1]
+    mod2 = mod_ids[2]
+    print("Starting")
+    print(mod1, "\t", mod2)
+    print(mod1, ": ", craft.modules[mod1].cons)
+    print(mod2, ": ", craft.modules[mod2].cons)
+    print("Disconnected")
+    craft.disconnect(mod1, 1)
+    print(mod1, ": ", craft.modules[mod1].cons)
+    print(mod2, ": ", craft.modules[mod2].cons)
+    print("Re-conected")
+    craft.connect(mod1, 1, mod2, 3)
+    print(mod1, ": ", craft.modules[mod1].cons)
+    print(mod2, ": ", craft.modules[mod2].cons)
+    input()
     print("sorting")
     craft.sort(mod_ids)
     print("sorted")
