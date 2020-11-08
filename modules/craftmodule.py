@@ -16,7 +16,7 @@ class Module:
     def __init__(self, mod_id, dimensions=(0.1, 0.1, 0.1), position=(0, 0, 0)):
         self.cons = [None] * len(dimensions) * 2
         self.rotation = [1] + [0] * 3
-        self.pos = tuple(round(array(position), 2))
+        self.pos = round(position, 3)
         self.type = None
         self.id = mod_id
         self.dim = dimensions

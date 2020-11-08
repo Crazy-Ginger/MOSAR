@@ -34,8 +34,9 @@ class Spacecraft:
         self.precision = precision
         self.is_goal = is_goal
 
-    def add_mod(self, new_id, position=(0, 0, 0), size=(0.1, 0.1, 0.1), rotation=(0, 0, 0)):
+    def add_mod(self, new_id, position, size=(0.1, 0.1, 0.1), rotation=(0, 0, 0)):
         """Add an unconnected module to the craft dictionary"""
+        position = np.round(position, 4)
         new_mod = Module(new_id, size, position)
         new_mod.type = new_id[-self.tag_len:]
 
@@ -247,9 +248,7 @@ class Spacecraft:
         if self.is_goal:
             self.modules[mod_a].pos = (0, 0, 0)
             self.modules[mod_b].pos = self.get_new_position(mod_a, mod_b, mod_a_port)
-        elif (self.modules[mod_a].pos is not None) and (
-            self.modules[mod_b].pos is not None
-        ):
+        elif (self.modules[mod_a].pos is not None) and (self.modules[mod_b].pos is not None):
             # checks modules are next to each other
 
             if self.check_adjacency(mod_a, mod_b) is None:
@@ -307,16 +306,17 @@ class Spacecraft:
         # disconnects port on other module
         modCon.unlink(mod_id, self.modules[mod_id].cons[port_id])
         flag = False
-        print(self.modules[mod_id].cons[port_id], ":", self.modules[self.modules[mod_id].cons[port_id]].cons)
-        print("porting")
         for i in range(len(self.modules[self.modules[mod_id].cons[port_id]].cons)):
             if self.modules[self.modules[mod_id].cons[port_id]].cons[i] == mod_id:
                 self.modules[self.modules[mod_id].cons[port_id]].cons[i] = None
                 flag = True
         if not flag:
-            raise RuntimeWarning("%s was not connected to %s in both directions" % (mod_id, self.modules[mod_id].cons[port_id]))
+            print("Error Disconnect_all:")
+            print(mod_id, ": ", self.modules[mod_id].cons)
+            print(self.modules[mod_id].cons[port_id], ": ", self.modules[self.modules[mod_id].cons[port_id]].cons)
+            print()
+            # raise RuntimeError("%s was not connected to %s in both directions" % (mod_id, self.modules[mod_id].cons[port_id]))
         self.modules[mod_id].cons[port_id] = None
-        print("done disconnecting")
 
     def disconnect_all(self, mod_id):
         """loops through all connections of a given module and if connected runs disconnect"""
@@ -475,9 +475,7 @@ class Spacecraft:
                 offset = np.round(clearance * np.sign(self.modules[mod_path[0]].pos[index] - self.modules[mod_path[1]].pos[index]), 4)
 
         if len(mod_path) > 2:
-            diff = np.round(
-                list(
-                    map(op.sub, list(self.modules[mod_path[1]].pos), list(self.modules[mod_path[2]].pos))), 3)
+            diff = np.round(list(map(op.sub, list(self.modules[mod_path[1]].pos), list(self.modules[mod_path[2]].pos))), 3)
 
             for index in range(len(diff)):
                 if abs(diff[index]) >= 0.1:
@@ -488,8 +486,7 @@ class Spacecraft:
         # also doesn't account for module rotation
 
         for index in range(2, len(mod_path)):
-            diff = np.round(
-                list(map(op.sub, self.modules[mod_path[index - 1]].pos, self.modules[mod_path[index]].pos)), 3)
+            diff = np.round(list(map(op.sub, self.modules[mod_path[index - 1]].pos, self.modules[mod_path[index]].pos)), 3)
 
             if abs(diff[axis_of_movement]) > 0.1:
                 path = np.concatenate([path, np.array([list(np.round(self.modules[mod_path[index - 1]].pos, 2))])])
@@ -537,18 +534,13 @@ class Spacecraft:
                 # ensures that
 
                 if i == len(path) - 1:
-                    path[i][dim] += np.round(
-                        clearance * np.sign(path[i][dim] - path[i - 1][dim]), 4
-                    )
+                    path[i][dim] += np.round(clearance * np.sign(path[i][dim] - path[i - 1][dim]), 4)
                 else:
                     try:
                         cur_mod = mod_path[np.where(mod_coords.all() == path[i])[0][0]]
                     except IndexError:
-                        print(
-                            "%i coordinates don't appear to be related to another module in the path"
-                            % (path[i])
-                        )
-                    offset = np.round((clearance + self.modules[cur_mod].dim[dim] / 2 + moving_mod.dim[dim] / 2) * np.sign(path[i][dim] - path[i - 1][dim]),4)
+                        print("%i coordinates don't appear to be related to another module in the path" % (path[i]))
+                    offset = np.round((clearance + self.modules[cur_mod].dim[dim] / 2 + moving_mod.dim[dim] / 2) * np.sign(path[i][dim] - path[i - 1][dim]), 4)
                     path[i][dim] += offset
 
         path = np.concatenate((path, np.array([final_pos])))
@@ -653,7 +645,7 @@ class Spacecraft:
 
         # get order for goal then take only module types
         goal_order = self.get_goal_order()
-        goal_order = [elem[-self.tag_len :] for elem in goal_order]
+        goal_order = [elem[-self.tag_len:] for elem in goal_order]
 
         final_places = {}
 
@@ -699,7 +691,7 @@ class Spacecraft:
             self.disconnect_all(current_order[0][0])
 
             popped_mod = current_order[0].pop(0)
-            path = current_order[0][-i - 1 :: -1] + [popped_mod]
+            path = current_order[0][-i-1::-1] + [popped_mod]
 
             if i == 0:
                 current_order.append([popped_mod])
@@ -709,27 +701,28 @@ class Spacecraft:
             # moves the module to the new position
             # path currently moves the module towards nearest module (oops)
             path = self.get_coord_path(path, unused[0])
-            print(popped_mod)
+            # print(popped_mod)
 
             for coord in path:
-                print("moving to:", coord)
+                # print("moving to:", coord)
                 self.move_mod(popped_mod, coord)
             final_pose = modCon.getPose(popped_mod)
             final_pose = [final_pose["x"]] + [final_pose["y"]] + [final_pose["z"]]
             final_pose = np.round(final_pose, 3)
-            print("final pos:", final_pose)
             # connects to row above/below
-            self.connect(popped_mod, unused[0], current_order[0][-i - 1], base_cons[unused[0]])
-            # connect to modules on it's own rown
+            # self.connect(popped_mod, unused[0], current_order[0][-i - 1], base_cons[unused[0]])
+            # connect to modules on it's own
             self.connect_all(popped_mod)
+
+        # for testing: prints out mods and their connections
+        # for mod in self.modules:
+            # print(mod, ": ", self.modules[mod].cons)
 
         # remove the now used ports so that bubble sort only uses the remaining dimension
         unused.remove(base_cons[unused[0]])
         unused.remove(unused[0])
 
         print("beginning bubble")
-        # bubble sort both rows
-
         # sort each row seperately (could run in parallel?)
         for sub_list in current_order:
             # sorts each row
@@ -742,7 +735,7 @@ class Spacecraft:
                         self.disconnect_all(sub_list[j + 1])
 
                         self.disconnect_all(sub_list[j])
-                        self.move_mod(sub_list[j],)
+                        # self.move_mod(sub_list[j],)
                         # take first mod, get unused dimension
                         # move the first mod up and then ontop of the second module
                         # move the second mod along to pos of 1st
@@ -807,8 +800,8 @@ class Spacecraft:
 
         for idx in range(len(order)):
             base_cons = [2, 3, 0, 1, 5, 4]
-            mod_type = order[idx][-self.tag_len :]
-            path = order[idx + 1 :]
+            mod_type = order[idx][-self.tag_len:]
+            path = order[idx + 1:]
 
             if idx == 0:
                 self.disconnect_all(order[idx])
@@ -825,9 +818,7 @@ class Spacecraft:
             for port in range(len(self.goal.modules[last_mod].cons)):
                 if self.goal.modules[last_mod].cons[port] is None:
                     continue
-                elif (
-                    self.goal.modules[last_mod].cons[port][-self.tag_len :] == mod_type
-                ):
+                elif (self.goal.modules[last_mod].cons[port][-self.tag_len:] == mod_type):
                     self.disconnect_all(order[idx])
                     self.connect(order[idx], base_cons[port], path[-1], port)
                     sucess = True
