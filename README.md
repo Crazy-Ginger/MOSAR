@@ -20,7 +20,7 @@ To install the cube modules:
 
 Then to etablish the simulation
 
-    morse run modules indoor.py
+    morse run modules line.py
 
 
 ---------
