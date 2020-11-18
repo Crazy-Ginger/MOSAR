@@ -62,7 +62,7 @@ def main():
 
     for mod in mod_ids:
         craft.connect_all(mod)
-        # print(mod, ": ", craft.modules[mod].cons)
+        print(mod, ": ", craft.modules[mod].cons)
     print("connected chain")
 
     print("sorting")

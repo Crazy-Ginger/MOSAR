@@ -1,13 +1,11 @@
 ToDo:
 -----
 
-- Write up proper README
+- Add method documentation to github
 - Fix melt, sort grow
 - Properly format morsecraft.py
 - Set up repository as a virtual environment, auto-install dependancies
-- Set CleanMORSE as the main repo (remove BadMORSE and others)
 - Add true support for orientation of non-cuboid modules (path finding doesn't change the orientation)
 - Add controllers for module orientation to modControl and in morsecraft
 - Add support for different sized modules
-- Add support for modules with more than 6 ports, this requires rewritting everything as a basic assumtion is that each module has only 6 ports and that certain ports will face others when the modules are facing the same direction
-- Silence MORSE output so that main.py can be run and still used to debug
+- Silence MORSE output so that main.py can be run and still be used to debug

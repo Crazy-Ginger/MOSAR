@@ -145,12 +145,11 @@ class Spacecraft:
 
         while to_visit:
             path = to_visit.pop(0)
-            current_node = path[-1]
+            current_node = str(path[-1])
 
             to_return = True
 
             # checks if current_node is only connected by 1 link
-
             if sum(x is None for x in self.modules[current_node].cons) == 5:
                 return current_node, path
 
@@ -167,7 +166,7 @@ class Spacecraft:
                 return current_node, visited
             visited.add(current_node)
 
-    def _init_(self, tag_length=3, precision=0.01, is_goal=False):
+    def __init__(self, tag_length=3, precision=0.01, is_goal=False):
         self._root = None
         self.modules = {}
         self.goal = None
@@ -299,9 +298,9 @@ class Spacecraft:
                     break
 
             if to_return:
-                base_cons = [2, 3, 4, 0, 1, 5]
+                port_ids = [2, 3, 4, 0, 1, 5]
 
-                return base_cons[i]
+                return port_ids[i]
 
         return None
 
@@ -469,7 +468,7 @@ class Spacecraft:
 
     def _get_goal_order(self):
         """return the goal order using BFS"""
-        root, dump = self.goal.get_isolated_mod(next(iter(self.goal.modules)))
+        root, dump = self.goal.__get_isolated_mod(next(iter(self.goal.modules)))
         to_visit = [root]
         visited = []
 
@@ -572,9 +571,8 @@ class Spacecraft:
                         cont = True
 
     def melt(self, root=None):
-        """Places all modules in a line"""
+        """Places all modules in a chain"""
         # get most extreme module or check passed module
-
         if root is None:
             root, dump_path = self.__get_isolated_mod(next(iter(self.modules)))
         else:
@@ -590,18 +588,21 @@ class Spacecraft:
                 raise ValueError("%s is not a valid root" % (root))
 
         # connect all modules together to ensure optimum paths
-
-        for node in self.modules():
+        for node in self.modules:
             self.connect_all(node)
 
+        print("root: ", root)
+        print("root connections: ", self.modules[root].cons)
         # find coords of free space next to root
+        print("ports")
         port_id = None
-
-        for i in root.cons:
-            if root.conncetions[i] is None:
+        for i in range(len(self.modules[root].cons)):
+            if self.modules[root].cons[i] is None:
                 port_id = i
-
                 break
+        if port_id is None:
+            raise TypeError("port_id has not been set, check root validity")
+
         base_cons = [2, 3, 0, 1, 5, 4]
         # moves all modules into chain
         moved = []
@@ -618,7 +619,6 @@ class Spacecraft:
             self.disconnect_all(current_node)
 
             # move current node over path by getting positions outside of modules
-
             for coords in coord_path:
                 self._move_mod(current_node, coords)
 
@@ -726,7 +726,6 @@ class Spacecraft:
                         pos1 = self.modules[sub_list[j]].pos
                         pos2 = self.modules[sub_list[j + 1]].pos
                         self.disconnect_all(sub_list[j + 1])
-
 
                         self.disconnect_all(sub_list[j])
                         # self.move_mod(sub_list[j],)
