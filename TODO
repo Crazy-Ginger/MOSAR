@@ -9,3 +9,5 @@ ToDo:
 - Add controllers for module orientation to modControl and in morsecraft
 - Add support for different sized modules
 - Silence MORSE output so that main.py can be run and still be used to debug
+- Rewrite so code is distributed (better simulate real world use)
+- Implement code into module robots (requires rewriting to distributed first)

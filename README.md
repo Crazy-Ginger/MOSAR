@@ -1,4 +1,4 @@
-# MOSAR Module Automated Reconfiguration
+# MOSAR Automated Reconfiguration
 This is a program that rearranges cuboid robots using the Melt, Sort, Grow algorithm laid out in: [Planning for Heterogeneous Self-Reconfiguring Robots](http://groups.csail.mit.edu/drl/publications/papers/MeltSortGrow.pdf). It is written exclusively in python and uses the MORSE simulator to demonstrate.
 
 Requirements:
