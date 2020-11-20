@@ -3,6 +3,7 @@ ToDo:
 
 - Add method documentation to github
 - Fix melt, sort grow
+- Add unit-testing described by: [morse testing](https://www.openrobots.org/morse/doc/stable/dev/testing.html)
 - Properly format morsecraft.py
 - Set up repository as a virtual environment, auto-install dependancies
 - Add true support for orientation of non-cuboid modules (path finding doesn't change the orientation)
