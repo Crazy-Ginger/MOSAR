@@ -15,6 +15,7 @@ from morse.builder import *
 NumModules = 16
 modules = []
 ModuleColours = [[(1/NumModules)*x, 0.0, 1-(1/NumModules)*x, 1.0] for x in range(NumModules)]
+ModuleColours[0] = [0.0, 1.0, 0.0, 1.0]
 # Make a set of enumerated module robots
 for i in range(NumModules):
     ModuleName = 'mod' + "{:03d}".format(i) + "_MOT"
