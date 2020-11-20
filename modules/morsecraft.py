@@ -25,12 +25,16 @@ _version_ = "-0.1"
 
 class Spacecraft:
     """A spacecraft class it stores a dictionary of modules and manages their connections and rearrangement"""
+
     def __get_coord_path(self, mod_path, final_port, clearance=None):
         """pass  a list of modules and the port the module will be connected to, returns a list of coordinates around the path
         doesn't take into account the orientation of the modules (will cause problems with different sized mods"""
 
         if clearance is None:
             clearance = self.precision
+
+        if type(mod_path) != list:
+            mod_path = list(mod_path)
 
         # initial variables and conditions
         mod_path = mod_path[::-1]
@@ -591,10 +595,8 @@ class Spacecraft:
         for node in self.modules:
             self.connect_all(node)
 
-        print("root: ", root)
-        print("root connections: ", self.modules[root].cons)
+        print("root: ", root, "\t", self.modules[root].cons)
         # find coords of free space next to root
-        print("ports")
         port_id = None
         for i in range(len(self.modules[root].cons)):
             if self.modules[root].cons[i] is None:
@@ -611,6 +613,7 @@ class Spacecraft:
         while len(to_move) != 0:
             # gets an isolated mod and the path of modules that connect it to the root
             current_node, current_path = self.__get_isolated_mod(root)
+            print("Melting: ", current_node)
 
             # gets the path of coordinates for the module to travel along
             coord_path = self.__get_coord_path(current_path, base_cons[port_id])
@@ -623,7 +626,7 @@ class Spacecraft:
                 self._move_mod(current_node, coords)
 
             # connect module to chain (1 needs to be replaced to take account of modules need to be in certain orientations)
-            self.connect(current_node, port_id, root, self._get_port(base_cons[port_id]))
+            self.connect(current_node, self._get_port(current_node, base_cons[port_id]), root, port_id)
             moved.append(current_node)
             to_move.remove(current_node)
             root = current_node
