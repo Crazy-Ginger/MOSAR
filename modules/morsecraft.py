@@ -24,11 +24,42 @@ _version_ = "-0.1"
 
 
 class Spacecraft:
-    """A spacecraft class it stores a dictionary of modules and manages their connections and rearrangement"""
+    """
+    A spacecraft class it stores a dictionary of modules and manages their connections and rearrangement
+
+    terms: 
+        modules: cubesats (10cm x 10cm x 10cm) with a port on each face
+        base_ports: these are the ports of the modules assuming the module has no rotation applied to it
+        they are laid out so that 0->2, 1->3, 4->5
+        x axis passes through 0 -> 2
+        y axis passes through 3 -> 1
+        z axis passes through 5 -> 4
+
+                +---+
+                | 4 |
+            +---+---+---+---+
+            | 0 | 3 | 2 | 1 |
+            +---+---+---+---+
+                | 5 |
+                +---+
+
+    """
 
     def __get_coord_path(self, mod_path, final_port, clearance=None):
-        """pass  a list of modules and the port the module will be connected to, returns a list of coordinates around the path
-        doesn't take into account the orientation of the modules (will cause problems with different sized mods"""
+        """
+        pass  a list of modules and the port the module will be connected to, returns a list of coordinates around the path
+        
+        :param mod_path: path of modules from the root to the module being relocated
+        :param final_port: the port the module will be connected to
+        :param clearance: (optional) how far to keep the module from the structure
+
+        :returns: numpy array of floating point numbers that should be external to the modules
+        
+        TODO
+        ----
+        refactor to remove some for loops
+        take into account the orientation of the modules (will cause problems with different sized mods)
+        """
 
         if clearance is None:
             clearance = self.precision
@@ -83,11 +114,9 @@ class Spacecraft:
                 for index in range(len(diff)):
                     if abs(diff[index]) > clearance:
                         axis_of_movement = index
-
                         break
 
         # if a chain then add motions up and over the chain (not sure if necessary, chains don't seem to require it)
-
         if len(path) == 1:
             # creates 2 new modules to move the module around the chain
             over = np.array(np.array([final_pos]))
@@ -122,7 +151,7 @@ class Spacecraft:
                         cur_mod = mod_path[np.where(mod_coords.all() == path[i])[0][0]]
                     except IndexError:
                         print("%i coordinates don't appear to be related to another module in the path" % (path[i]))
-                    offset = np.round((clearance + self.modules[cur_mod].dim[dim] / 2 + moving_mod.dim[dim] / 2) * np.sign(path[i][dim] - path[i - 1][dim]), 4)
+                    offset = np.round((clearance + self.modules[cur_mod].dims[dim] / 2 + moving_mod.dim[dim] / 2) * np.sign(path[i][dim] - path[i - 1][dim]), 4)
                     path[i][dim] += offset
 
         path = np.concatenate((path, np.array([final_pos])))
@@ -142,7 +171,11 @@ class Spacecraft:
         return np.round(final_mod_path, 2)
 
     def __get_isolated_mod(self, root):
-        """gets unconnected module from root and path from root according to BFS"""
+        """
+        gets unconnected module from root and path from root according to BFS
+
+        :param root: the root module in the rearrangement
+        """
 
         to_visit = [[root]]
         visited = set()
@@ -171,6 +204,13 @@ class Spacecraft:
             visited.add(current_node)
 
     def __init__(self, tag_length=3, precision=0.01, is_goal=False):
+        """
+        constructor
+
+        :param tag_length: length of the tags at then end of the module names that descibe their speciality
+        :param precision: general precision of the movements to be made
+        :is_goal: if the craft created is actually a goal (means that none of the movements actually exist)
+        """
         self._root = None
         self.modules = {}
         self.goal = None
@@ -179,7 +219,14 @@ class Spacecraft:
         self.is_goal = is_goal
 
     def add_mod(self, new_id, position, size=(0.1, 0.1, 0.1), rotation=(0, 0, 0)):
-        """Add an unconnected module to the craft dictionary"""
+        """
+        Add an unconnected module to the craft dictionary
+        
+        :param new_id: id of the new module
+        :param position: x, y, z coordinates of the module
+        :param size: x, y, z dimensions of the module
+        :param rotation: rotation of the module in x, y, z
+        """
         position = np.round(position, 4)
         new_mod = Module(new_id, size, position)
         new_mod.type = new_id[-self.tag_len:]
@@ -200,7 +247,17 @@ class Spacecraft:
         self.modules[str(new_id)] = new_mod
 
     def set_rotation(self, mod_id, rotation):
-        """"pass mod_id and new rotation and the module's rotation will be set accordingly"""
+        """"
+        Set a module's rotation, cannot be done if the module is already connected to another
+        :param mod_id: id of the module to rotate
+        :param rotation: rotation of the module in x, y, z format
+
+        :raises KeyError: raises an exception if already connected to structure
+        """
+        
+        if sum(x is None for x in self.modules[current_node].cons) != 6:
+            raise KeyError("%s is connected to another module" % (mod_id))
+
         x = math.radians(rotation[0]) / 2
         y = math.radians(rotation[1]) / 2
         z = math.radians(rotation[2]) / 2
@@ -215,12 +272,34 @@ class Spacecraft:
         # if rotation is added to modController uncomment to implement the effects on the simulator
         # modCon.set_rotation(rotation)
 
-    def create_goal(self):
-        """creates a sub-object that can then be manipulated to set the goal state of the spacecraft"""
+    def create_goal(self, add_mods=True, mod_root=False):
+        """
+        creates a sub-object that can then be manipulated to set the goal state of the spacecraft
+
+        :param add_mods: (optional) to add all the modules in the current craft
+        :param mod_root: (optional) select a module to maintain position, if not set first module added is used
+        """
         self.goal = Spacecraft(self.tag_len, self.precision, is_goal=True)
+        # adds the modules to the goal, preserving names, positions and dimensions
+        if add_mods:
+            for key in self.modules:
+                self.goal.add_mod(key, self.modules[key].pos, self.modules[key].dims)
+            # sets the root of the goal
+            if mod_root:
+                self.goal._root = mod_root
+            else:
+                self.goal._root = next(iter(self.goal.modules))
 
     def _get_new_position(self, fixed_mod, moving_mod, port_id):
-        """returns the coordinates of the connected module based off the given module and port"""
+        """
+        finds the new positional coordinates of the module being moved
+
+        :param fixed_mod: module that is not being moved
+        :param moving_mod: module that is being moved to connect to the fixed module
+        :param port_id: base port on the fixed module the moving module will be attached via
+
+        :returns: tuple of x, y, z coords of new position for moving module
+        """
         fixed_mod = self.modules[fixed_mod]
         moving_mod = self.modules[moving_mod]
 
@@ -228,8 +307,8 @@ class Spacecraft:
 
         # first get x, y, z diffs to be added
         x_diff = (fixed_mod.dim[0] / 2) + (moving_mod.dim[0] / 2)
-        y_diff = (fixed_mod.dim[1] / 2) + moving_mod.dim[1] / 2
-        z_diff = fixed_mod.dim[2] / 2 + moving_mod.dim[2] / 2
+        y_diff = (fixed_mod.dim[1] / 2) + (moving_mod.dim[1] / 2)
+        z_diff = (fixed_mod.dim[2] / 2) + (moving_mod.dim[2] / 2)
 
         # np.array allows port_id to index the correct offset
         ports = [
@@ -271,11 +350,17 @@ class Spacecraft:
         diff = np.array(ports[port_id] + [0])
 
         # apply rotation matrix to get new direction of offset then add to fixed mod position
-
         return tuple(map(op.add, fixed_mod.pos, tuple(rotation.dot(diff))[:3]))
 
     def _check_adjacency(self, mod_a, mod_b):
-        """ returns true and the unrotated port_id if mod_a and mod_b are next to each other (based on their positions)"""
+        """
+        finds if 2 modules are adjacent to each other based on coordinates and dimensions
+        
+        :param mod_a: primary module key
+        :param mod_b: secondary module key
+
+        :returns: base port id if adjacent, false if not adjacent
+        """
         mod_a = self.modules[mod_a]
         mod_b = self.modules[mod_b]
 
@@ -298,18 +383,22 @@ class Spacecraft:
             for j in range(len(mod_position)):
                 if abs(mod_position[j] - mod_b.pos[j]) >= self.precision:
                     to_return = False
-
                     break
 
             if to_return:
                 port_ids = [2, 3, 4, 0, 1, 5]
-
                 return port_ids[i]
 
         return None
 
     def _check_chain(self, mod):
-        """returns max length of line originating on given module"""
+        """
+        calculate max length of chain around given module
+
+        :param mod: module to check as origin of the chain
+
+        :returns: the base port on which the chain starts, the number of modules contain in the chain
+        """
         max_length = 0
 
         for port in self.modules[mod].cons:
@@ -319,7 +408,16 @@ class Spacecraft:
                 # cont = True
 
     def _get_port(self, mod, base_port):
-        """returns the actual port to connect modules with when passed mod and the port to connect without rotation"""
+        """
+        returns the actual port to connect modules with when passed mod and the port to connect without rotation
+
+        :param mod: module which has the rotation checked
+        :param base_port: the port without rotation (gets axis/direction in which port points)
+
+        :returns: port that now points in the direction of the base ports
+
+        :raises: ValueError
+        """
         base_direcs = np.array(
             [
                 [-1, 0, 0, 0],
@@ -365,11 +463,19 @@ class Spacecraft:
         raise ValueError("Apperntly no ports point in that direction someone is wrong (blame the writer)")
 
     def connect(self, mod_a, mod_a_port, mod_b, mod_b_port):
-        """Connects the 2 passed modules with the specified ports
-        as orientation is going to be considered in future code it takes both ports"""
+        """
+        Connects the 2 passed modules with the specified ports also ensures that the modules are
+
+        :param mod_a: first module key
+        :param mod_a_port: port id to connect second module to
+        :param mod_b: second module key
+        :param mod_b_port: port id to connect first module to
+
+        :raises: ValueError
+        :raises: IndexError
+        """
 
         # checks the modules are not already connceted
-
         if self.modules[mod_a].cons[mod_a_port] == mod_b:
             if self.modules[mod_b].cons[mod_b_port] == mod_a:
                 return
@@ -388,15 +494,17 @@ class Spacecraft:
             raise IndexError("Port %d does not exist in this dimension" % (mod_b_port))
 
         # give postitions to connected module
-
         if self.is_goal:
-            self.modules[mod_a].pos = (0, 0, 0)
-            self.modules[mod_b].pos = self._get_new_position(mod_a, mod_b, mod_a_port)
+            if mod_a == self._root:
+                self.modules[mod_b].pos = self._get_new_position(mod_a, mod_b, mod_a_port)
+            elif mod_b == self._root
+                self.modules[mod_a].pos = self._get_new_position(mod_b, mod_a, mod_b_port)
+
         elif (self.modules[mod_a].pos is not None) and (self.modules[mod_b].pos is not None):
             # checks modules are next to each other
-
             if self._check_adjacency(mod_a, mod_b) is None:
                 raise ValueError("Modules %s, %s are not adjecent" % (mod_a, mod_b))
+            
         elif self.modules[mod_a].pos is not None:
             self.modules[mod_b].pos = self._get_new_position(mod_a, mod_b, mod_a_port)
 
@@ -414,12 +522,15 @@ class Spacecraft:
             # move the modules into position and ensure they are there
             self._move_mod(mod_a, self.modules[mod_a].pos)
             self._move_mod(mod_b, self.modules[mod_b].pos)
-        # links the modules together
-        modCon.link(mod_a, mod_b)
+            # links the modules together
+            modCon.link(mod_a, mod_b)
 
     def connect_all(self, mod_id):
-        """give a mod id, checks all adjacent positions and connects module to
-        adjancent modules"""
+        """
+        give a mod id, checks all adjacent positions and connects to any modules found there
+
+        :param mod_id: module key to connect modules to
+        """
 
         if self.modules[mod_id].pos is None:
             raise IndexError("%s does not have a position so it not yet connected" % (mod_id))
@@ -442,14 +553,22 @@ class Spacecraft:
                     self.connect(mod_id, mod_a_port, mod, mod_b_port)
 
     def disconnect(self, mod_id, port_id):
-        """takes a module id and port number and disconnects that port"""
+        """
+        Disconnects 2 modules connected together through a specific port on one and unlinks them both
+        
+        :param mod_id: primary module key which disconnected through
+        :param port_id: port id to disconnect
+        
+        :raises: ValueError
+        """
 
         if self.modules[mod_id].cons[port_id] is None:
             raise ValueError("Port %d on module: %s is not connected" % (port_id, mod_id))
 
-        # disconnects port on other module
+        # unlinks modules
         modCon.unlink(mod_id, self.modules[mod_id].cons[port_id])
         modCon.unlink(self.modules[mod_id].cons[port_id], mod_id)
+        # disconnects port on other module
         flag = False
         for i in range(len(self.modules[self.modules[mod_id].cons[port_id]].cons)):
             if self.modules[self.modules[mod_id].cons[port_id]].cons[i] == mod_id:
@@ -464,7 +583,9 @@ class Spacecraft:
         self.modules[mod_id].cons[port_id] = None
 
     def disconnect_all(self, mod_id):
-        """loops through all connections of a given module and if connected runs disconnect"""
+        """
+        Loops through all connections of a given module and if connected runs disconnect
+        """
         # add a way to avoid disconnect from arm/tug
 
         for port_id in range(len(self.modules[mod_id].cons)):
@@ -472,8 +593,12 @@ class Spacecraft:
                 self.disconnect(mod_id, port_id)
 
     def _get_goal_order(self):
-        """return the goal order using BFS"""
-        root, dump = self.goal.__get_isolated_mod(next(iter(self.goal.modules)))
+        """
+        Uses BFS to find the order of the goal structure
+        
+        :returns: linear array of modules
+        """
+        root = self.goal._root
         to_visit = [root]
         visited = []
 
@@ -492,8 +617,14 @@ class Spacecraft:
         return visited
 
     def _get_mod_path(self, root, goal):
-        """a dijkstra implementation
-        returns path from root mod_id and goal mod_id as module ids"""
+        """
+        Dijkstra implementation finds path from root and goal as module ids
+
+        :param root: root module key
+        :param goal: goal module key
+
+        :returns: list of module keys that form path from root to goal
+        """
         to_visit = {root}
         est_cost = {root: 0}
         final_cost = {}
@@ -518,7 +649,6 @@ class Spacecraft:
                     path.append(current_node)
                 # if goal[-self._mod_type:] == path[0][-self._mod_type:]:
                 path.reverse()
-
                 return path
 
             to_visit.remove(current_node)
@@ -538,28 +668,47 @@ class Spacecraft:
                 est_cost[neighbour] = final_cost[neighbour] + 1
 
     def import_from_json(self, file_name, goal=True):
-        """pass json file to import design (have to redifine craft if importing)"""
+        """
+        Decode a json file into a craft or craft goal
+
+        :param file_name: file name
+        :param goal: (optional) boolean
+
+        :returns: (optional) new craft
+        """
         with open(file_name, "r") as file:
             data = file.read().replace("\n", "")
 
         if goal is False:
             new_craft = pickler.decode(data)
             try:
-                new_craft._mod_type
+                new_craft.tag_len
             except AttributeError:
-                new_craft._mod_type = 3
+                new_craft.tag_len = 3
 
             return new_craft
         else:
             self.goal = pickler.decode(data)
 
     def export_to_json(self, file_name):
-        """export current spacecraft as a json file"""
+        """
+        Exports current spacecraft as a json file
+
+        :param file_name: file name to be outputted
+        """
         write_file = open(file_name + ".json", "w")
         write_file.write(pickler.encode(self))
 
     def _move_mod(self, mod_id, dest, precision=None):
-        """when called the program will only continue when the module has arrived at the passed position"""
+        """
+        Moves the module to dest (within precision)
+
+        :param mod_id: module key
+        :param dest: coordinates of the destination (x, y, z)
+        :param precision: (optional) integer/float offset
+
+        :warning: can loop forever
+        """
 
         if precision is None:
             precision = self.precision
@@ -576,7 +725,13 @@ class Spacecraft:
                         cont = True
 
     def melt(self, root=None):
-        """Places all modules in a chain"""
+        """
+        Places all modules in a chain
+
+        :param root: the module to rearrange all the other cubes around
+
+        :returns: list of module keys in new order
+        """
         # get most extreme module or check passed module
         if root is None:
             root, dump_path = self.__get_isolated_mod(next(iter(self.modules)))
@@ -635,7 +790,11 @@ class Spacecraft:
         return moved
 
     def sort(self, current_order):
-        """sorts the chain of modules"""
+        """
+        Sorts the chain of modules into a chain with the modules in the order needed to be placed into the goal order
+        
+        :param current_order: module keys in current order of the chain
+        """
 
         if self.goal is None:
             raise TypeError("goal is not set and therefore cannot be achieved")
@@ -793,7 +952,11 @@ class Spacecraft:
         return final_order
 
     def grow(self, order):
-        """moves the sorted module chain to form the goal structure"""
+        """
+        Rearranges a sorted module chain to form the goal structure
+        
+        :param order: module keys in current order of the chain
+        """
 
         for idx in range(len(order)):
             base_cons = [2, 3, 0, 1, 5, 4]
