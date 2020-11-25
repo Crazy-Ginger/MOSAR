@@ -449,6 +449,7 @@ class Spacecraft:
 
         # disconnects port on other module
         modCon.unlink(mod_id, self.modules[mod_id].cons[port_id])
+        modCon.unlink(self.modules[mod_id].cons[port_id], mod_id)
         flag = False
         for i in range(len(self.modules[self.modules[mod_id].cons[port_id]].cons)):
             if self.modules[self.modules[mod_id].cons[port_id]].cons[i] == mod_id:
