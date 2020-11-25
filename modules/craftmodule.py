@@ -19,7 +19,7 @@ class Module:
         self.pos = round(position, 3)
         self.type = None
         self.id = mod_id
-        self.dim = dimensions
+        self.dims = dimensions
 
     def __str__(self):
         return self.id
