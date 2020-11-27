@@ -55,6 +55,7 @@ class Spacecraft:
 
         TODO
         ----
+        find why it sometimes outputs duplicate coords for 3 or so lines as the first part
         refactor to remove some for loops
         take into account the orientation of the modules (will cause problems with different sized mods)
         """
@@ -191,7 +192,7 @@ class Spacecraft:
                 continue
 
             # checks if current_node is only connected by 1 link
-            if sum(x is None for x in self.modules[current_node].cons) == 5:
+            if sum(x is None for x in self.modules[current_node].cons) == 5 and current_node != root:
                 return current_node, path
 
             # add the children nodes in order
@@ -212,9 +213,9 @@ class Spacecraft:
         """
         constructor
 
-        :param tag_length: length of the tags at then end of the module names that descibe their speciality
-        :param precision: general precision of the movements to be made
-        :is_goal: if the craft created is actually a goal (means that none of the movements actually exist)
+        :param tag_length: int, length of the tags at then end of the module names that descibe their speciality
+        :param precision: float, general precision of the movements to be made
+        :is_goal: bool, if the craft created is actually a goal (means that none of the movements actually exist)
         """
         self._root = None
         self.modules = {}
@@ -227,10 +228,10 @@ class Spacecraft:
         """
         Add an unconnected module to the craft dictionary
 
-        :param new_id: id of the new module
-        :param position: x, y, z coordinates of the module
-        :param size: x, y, z dimensions of the module
-        :param rotation: rotation of the module in x, y, z
+        :param new_id: string, id of the new module
+        :param position: tuple(floats), x, y, z coordinates of the module
+        :param size: tuple(floats), x, y, z dimensions of the module
+        :param rotation: tuple, rotation of the module in x, y, z (cartesian)
         """
         position = np.round(position, 4)
         new_mod = Module(new_id, size, position)
@@ -287,13 +288,13 @@ class Spacecraft:
         self.goal = Spacecraft(self.tag_len, self.precision, is_goal=True)
         # adds the modules to the goal, preserving names, positions and dimensions
         if add_mods:
-            for key in self.modules:
-                self.goal.add_mod(key, self.modules[key].pos, self.modules[key].dims)
+            for key in self.modules.keys():
+                self.goal.add_mod(str(key), self.modules[key].pos, self.modules[key].dims)
             # sets the root of the goal
             if mod_root:
                 self.goal._root = mod_root
             else:
-                self.goal._root = next(iter(self.goal.modules))
+                self.goal._root, dump_path = self.__get_isolated_mod(next(iter(self.modules)))
 
     def _get_new_position(self, fixed_mod, moving_mod, port_id):
         """
@@ -571,6 +572,7 @@ class Spacecraft:
             raise ValueError("Port %d on module: %s is not connected" % (port_id, mod_id))
 
         # unlinks modules
+        # TODO investigate issues with unlinking modules (some modules prefer to unlink one way)
         modCon.unlink(mod_id, self.modules[mod_id].cons[port_id])
         modCon.unlink(self.modules[mod_id].cons[port_id], mod_id)
         # disconnects port on other module
@@ -711,17 +713,28 @@ class Spacecraft:
         :param mod_id: module key
         :param dest: coordinates of the destination (x, y, z)
         :param precision: (optional) integer/float offset
-
-        :warning: can loop forever
         """
 
         if precision is None:
             precision = self.precision
         cont = False
 
+        loop_checker = 0
+        prev_x = 0
+        prev_y = 0
+        prev_z = 0
+
         while cont is False:
             modCon.setDest(mod_id=mod_id, x=dest[0], y=dest[1], z=dest[2])
             pose = modCon.getPose(mod_id)
+
+            if round(prev_x - pose["x"], 3) == 0 and round(prev_y - pose["y"], 3) == 0 and round(prev_z - pose["z"], 3) == 0:
+                loop_checker += 1
+                if loop_checker > 200:
+                    print("Failed to move: ", mod_id, " to: ", dest)
+                    return
+            else:
+                prev_x, prev_y, prev_z = pose["x"], pose["y"], pose["z"]
 
             if dest[0] - precision <= pose["x"] <= dest[0] + precision:
                 if dest[1] - precision <= pose["y"] <= dest[1] + precision:
@@ -781,7 +794,11 @@ class Spacecraft:
 
             # disconnect the module and move it
             self.disconnect_all(current_node)
+            print(current_node, ": ", self.modules[current_node].cons)
 
+            # modCon.setDest(current_node, x=2, y=2, z=2)
+
+            # tmp = input()
             # move current node over path by getting positions outside of modules
             for coords in coord_path:
                 self._move_mod(current_node, coords)
@@ -794,12 +811,18 @@ class Spacecraft:
 
         return moved
 
-    def sort(self, current_order):
+    def sort(self, current_order=None):
         """
         Sorts the chain of modules into a chain with the modules in the order needed to be placed into the goal order
 
-        :param current_order: module keys in current order of the chain
+        :param current_order: (optional) module keys in current order of the chain
         """
+
+        # if no current order is passed, find it
+        if current_order is None:
+            end_mod, dump = self.__get_isolated_mod(next(iter(self.modules)))
+            opposite_end, current_order = self.__get_isolated_mod(end_mod)
+            del end_mod, dump, opposite_end
 
         if self.goal is None:
             raise TypeError("goal is not set and therefore cannot be achieved")
@@ -854,6 +877,7 @@ class Spacecraft:
             popped_mod = current_order[0].pop(0)
             path = current_order[0][-i-1::-1] + [popped_mod]
 
+            # print("splitting: ", popped_mod)
             if i == 0:
                 current_order.append([popped_mod])
             else:
@@ -862,14 +886,17 @@ class Spacecraft:
             # moves the module to the new position
             # path currently moves the module towards nearest module (oops)
             path = self.__get_coord_path(path, unused[0])
-            # print(popped_mod)
+            path = np.unique(path, axis=0)
 
+            # print(path, "\n")
             for coord in path:
                 # print("moving to:", coord)
                 self._move_mod(popped_mod, coord)
-            final_pose = modCon.getPose(popped_mod)
-            final_pose = [final_pose["x"]] + [final_pose["y"]] + [final_pose["z"]]
-            final_pose = np.round(final_pose, 3)
+
+            # final_pose = modCon.getPose(popped_mod)
+            # final_pose = [final_pose["x"]] + [final_pose["y"]] + [final_pose["z"]]
+            # final_pose = np.round(final_pose, 3)
+
             # connects to row above/below
             # self.connect(popped_mod, unused[0], current_order[0][-i - 1], base_cons[unused[0]])
             # connect to modules on it's own
@@ -883,7 +910,14 @@ class Spacecraft:
         unused.remove(base_cons[unused[0]])
         unused.remove(unused[0])
 
+        print(goal_order)
+        print(final_places)
+
+        print(current_order[0])
+        print(current_order[1])
+
         print("beginning bubble")
+        tmp = input()
         # sort each row seperately (could run in parallel?)
         for sub_list in current_order:
             # sorts each row

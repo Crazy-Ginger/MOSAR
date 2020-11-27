@@ -1,11 +1,11 @@
 #!/usr/local/bin/python3.5
 
-import math
 import time
 
 import pymorse
 
 morse = pymorse.Morse()
+
 
 def getPose(mod_id):
     moduleObject = getattr(morse, mod_id)
@@ -13,6 +13,7 @@ def getPose(mod_id):
 
     return pose
     # print(pose)
+
 
 def setDest(mod_id, x=0.0, y=0.0, z=0.0):
     moduleObject = getattr(morse, mod_id)
@@ -27,7 +28,6 @@ def unlink(mod_a, mod_b):
 
 
 def main():
-
     moduleNames = [
         mod_id for mod_id in dir(morse) if mod_id[:3] == 'mod'
         and mod_id[3:6].isnumeric() and mod_id[7:].isalpha()
