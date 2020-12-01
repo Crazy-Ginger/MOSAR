@@ -20,8 +20,10 @@ def setDest(mod_id, x=0.0, y=0.0, z=0.0):
     destClient = moduleObject.destination
     destClient.publish({'x' : x, 'y' : y, 'z' : z})
 
+
 def link(mod_a, mod_b):
     morse.rpc(mod_a, 'link', True, mod_b)
+
 
 def unlink(mod_a, mod_b):
     morse.rpc(mod_a, 'link', False, mod_b)
@@ -65,5 +67,6 @@ def main():
             #morse.rpc(moduleName, 'colour', [1.0, 1.0, 1.0, 1.0])
             #morse.rpc(lastModuleName+'.destination', 'set_property', 'RemainAtDestination', False)
 
+
 if __name__ == "__main__":
-	main()
+    main()
