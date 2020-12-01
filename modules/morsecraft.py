@@ -530,6 +530,7 @@ class Spacecraft:
             self._move_mod(mod_b, self.modules[mod_b].pos)
             # links the modules together
             modCon.link(mod_a, mod_b)
+            modCon.link(mod_b, mod_a)
 
     def connect_all(self, mod_id):
         """
