@@ -7,7 +7,7 @@ import pymorse
 morse = pymorse.Morse()
 
 
-def getPose(mod_id):
+def get_pose(mod_id):
     moduleObject = getattr(morse, mod_id)
     pose = moduleObject.pose.get()
 
@@ -15,10 +15,10 @@ def getPose(mod_id):
     # print(pose)
 
 
-def setDest(mod_id, x=0.0, y=0.0, z=0.0):
-    moduleObject = getattr(morse, mod_id)
-    destClient = moduleObject.destination
-    destClient.publish({'x' : x, 'y' : y, 'z' : z})
+def set_dest(mod_id, x=0.0, y=0.0, z=0.0):
+    module_object = getattr(morse, mod_id)
+    dest_client = module_object.destination
+    dest_client.publish({'x': x, 'y': y, 'z': z})
 
 
 def link(mod_a, mod_b):
@@ -27,6 +27,10 @@ def link(mod_a, mod_b):
 
 def unlink(mod_a, mod_b):
     morse.rpc(mod_a, 'link', False, mod_b)
+
+
+def get_links(mod_a):
+    return morse.rpc(mod_a, 'get_links')
 
 
 def main():

@@ -140,3 +140,7 @@ class CubeModule(morse.core.robot.Robot):
             this_object['ConnectedObjects'].remove(near_object)
             near_object['ConnectedObjects'].remove(this_object)
             logger.info("OBJECT %s DISCONNECTED FROM %s" % (near_object.name, this_object.name))
+
+    @service
+    def get_links(self):
+        return self.bge_object['ConnectedObjects']

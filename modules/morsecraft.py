@@ -73,18 +73,6 @@ class Spacecraft:
         final_pos = self._get_new_position(mod_path[-1], moving_mod, final_port)
         moving_mod = self.modules[mod_path[0]]
 
-        # get the direction of clearance to place the module clear of the structure
-        # also ensures that the direction of movement is counter after 2nd connection
-        # for j in range(2):
-        # diff = np.round(list(map(op.sub, list(self.modules[mod_path[j]].pos), list(self.modules[mod_path[j+1]].pos))), 3)
-        # for index in range(len(diff)):
-        # if abs(diff[index]) >= 0.1:
-        # axis_of_movement = index
-        # if j != 0:
-        # break
-        # offset = np.round(clearance * np.sign(self.modules[mod_path[0]].pos[index] - self.modules[mod_path[1]].pos[index]), 4)
-
-
         # finds the vector the first connection moves in so the vector of clearance can be found
         diff = np.round(list(map(op.sub, list(self.modules[mod_path[0]].pos), list(self.modules[mod_path[1]].pos),)), 3)
 
@@ -261,7 +249,7 @@ class Spacecraft:
         :raises KeyError: raises an exception if already connected to structure
         """
 
-        if sum(x is None for x in self.modules[current_node].cons) != 6:
+        if sum(x is None for x in self.modules[mod_id].cons) != 6:
             raise KeyError("%s is connected to another module" % (mod_id))
 
         x = math.radians(rotation[0]) / 2
@@ -726,8 +714,8 @@ class Spacecraft:
         prev_z = 0
 
         while cont is False:
-            modCon.setDest(mod_id=mod_id, x=dest[0], y=dest[1], z=dest[2])
-            pose = modCon.getPose(mod_id)
+            modCon.set_dest(mod_id=mod_id, x=dest[0], y=dest[1], z=dest[2])
+            pose = modCon.get_pose(mod_id)
 
             if round(prev_x - pose["x"], 3) == 0 and round(prev_y - pose["y"], 3) == 0 and round(prev_z - pose["z"], 3) == 0:
                 loop_checker += 1
@@ -789,17 +777,16 @@ class Spacecraft:
             # gets an isolated mod and the path of modules that connect it to the root
             current_node, current_path = self.__get_isolated_mod(root)
             print("Melting: ", current_node)
+            print(current_path)
 
             # gets the path of coordinates for the module to travel along
             coord_path = self.__get_coord_path(current_path, base_cons[port_id])
 
             # disconnect the module and move it
             self.disconnect_all(current_node)
-            print(current_node, ": ", self.modules[current_node].cons)
+            print(coord_path)
+            tmp = input()
 
-            # modCon.setDest(current_node, x=2, y=2, z=2)
-
-            # tmp = input()
             # move current node over path by getting positions outside of modules
             for coords in coord_path:
                 self._move_mod(current_node, coords)
@@ -894,7 +881,7 @@ class Spacecraft:
                 # print("moving to:", coord)
                 self._move_mod(popped_mod, coord)
 
-            # final_pose = modCon.getPose(popped_mod)
+            # final_pose = modCon.get_pose(popped_mod)
             # final_pose = [final_pose["x"]] + [final_pose["y"]] + [final_pose["z"]]
             # final_pose = np.round(final_pose, 3)
 
