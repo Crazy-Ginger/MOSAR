@@ -3,9 +3,8 @@
 import math
 import operator as op
 
-import numpy as np
-
 import jsonpickle as pickler
+import numpy as np
 
 from .craftmodule import Module as Module
 from .scripts import modControl as modCon
@@ -181,18 +180,19 @@ class Spacecraft:
 
             # checks if current_node is only connected by 1 link
             if sum(x is None for x in self.modules[current_node].cons) == 5 and current_node != root:
+                print("returning due to sum")
                 return path
 
             # add the children nodes in order
-            elif current_node not in visited:
-                for child in self.modules[current_node].cons:
-                    if child and child not in visited:
-                        to_return = False
-                        new_path = path.copy()
-                        new_path.append(child)
-                        to_visit.append(new_path)
-                    
+            for child in self.modules[current_node].cons:
+                if child and child not in visited:
+                    to_return = False
+                    new_path = path.copy()
+                    new_path.append(child)
+                    to_visit.append(new_path)
+
             if to_return is True:
+                print("returing due to True")
                 return path
 
     def __init__(self, tag_length=3, precision=0.01, is_goal=False):
@@ -789,6 +789,9 @@ class Spacecraft:
             # move current node over path by getting positions outside of modules
             for coords in coord_path:
                 self._move_mod(current_node, coords)
+                # for mod in self.modules.keys():
+                    # self.connect_all(mod)
+                # self.disconnect_all(current_node)
 
             # connect module to chain (1 needs to be replaced to take account of modules need to be in certain orientations)
             self.connect(current_node, self._get_port(current_node, base_cons[port_id]), root, port_id)
