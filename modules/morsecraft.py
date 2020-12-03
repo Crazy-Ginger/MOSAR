@@ -163,7 +163,7 @@ class Spacecraft:
 
         :param root: the root module in the rearrangement
 
-        :returns: module key, list of module keys
+        :returns: list of module keys
         """
 
         to_visit = [[root]]
@@ -171,31 +171,29 @@ class Spacecraft:
 
         while to_visit:
             path = to_visit.pop(0)
-            current_node = str(path[-1])
-
-            to_return = True
-
-            # TODO consider if this will skip anything
+            current_node = path[-1]
             if current_node in visited:
                 continue
 
+            visited.add(current_node)
+
+            to_return = True
+
             # checks if current_node is only connected by 1 link
             if sum(x is None for x in self.modules[current_node].cons) == 5 and current_node != root:
-                return current_node, path
+                return path
 
             # add the children nodes in order
             elif current_node not in visited:
                 for child in self.modules[current_node].cons:
-                    if child is not None and child not in visited:
-                        new_path = list(path)
+                    if child and child not in visited:
+                        to_return = False
+                        new_path = path.copy()
                         new_path.append(child)
                         to_visit.append(new_path)
-                        to_return = False
-
-            visited.add(current_node)
-            # print(current_node, ": ", path, "\nvisited: ", visited, "\n")
+                    
             if to_return is True:
-                return current_node, visited
+                return path
 
     def __init__(self, tag_length=3, precision=0.01, is_goal=False):
         """
@@ -282,7 +280,7 @@ class Spacecraft:
             if mod_root:
                 self.goal._root = mod_root
             else:
-                self.goal._root, dump_path = self.__get_isolated_mod(next(iter(self.modules)))
+                self.goal._root = self.__get_isolated_mod(next(iter(self.modules)))[-1]
 
     def _get_new_position(self, fixed_mod, moving_mod, port_id):
         """
@@ -741,7 +739,7 @@ class Spacecraft:
         """
         # get most extreme module or check passed module
         if root is None:
-            root, dump_path = self.__get_isolated_mod(next(iter(self.modules)))
+            root = self.__get_isolated_mod(next(iter(self.modules)))[-1]
         else:
             if root not in self.modules:
                 raise ValueError("%s is not a valid module" % (root))
@@ -775,7 +773,8 @@ class Spacecraft:
 
         while len(to_move) != 0:
             # gets an isolated mod and the path of modules that connect it to the root
-            current_node, current_path = self.__get_isolated_mod(root)
+            current_path = self.__get_isolated_mod(root)
+            current_node = current_path[-1]
             print("Melting: ", current_node)
             print(current_path)
 
@@ -808,9 +807,10 @@ class Spacecraft:
 
         # if no current order is passed, find it
         if current_order is None:
-            end_mod, dump = self.__get_isolated_mod(next(iter(self.modules)))
-            opposite_end, current_order = self.__get_isolated_mod(end_mod)
-            del end_mod, dump, opposite_end
+            end_mod = self.__get_isolated_mod(next(iter(self.modules)))[-1]
+            current_order = self.__get_isolated_mod(end_mod)
+            opposite_end = current_order[-1]
+            del end_mod, opposite_end
 
         if self.goal is None:
             raise TypeError("goal is not set and therefore cannot be achieved")
