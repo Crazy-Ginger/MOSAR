@@ -219,9 +219,9 @@ class Spacecraft:
         :param size: tuple(floats), x, y, z dimensions of the module
         :param rotation: tuple, rotation of the module in x, y, z (cartesian)
         """
-        position = np.round(position, 4)
-        new_mod = Module(new_id, size, position)
-        new_mod.type = new_id[-self.tag_len:]
+        position = np.round(position, 3)
+        type = new_id[-self.tag_len:]
+        new_mod = Module(new_id, type, size, position)
 
         if not self._root:
             self._root = new_mod
@@ -454,6 +454,17 @@ class Spacecraft:
                 return index
         raise ValueError("Apperntly no ports point in that direction someone is wrong (blame the writer)")
 
+    def assemble(self):
+        """
+        Connects all the modules in the craft together and updates their positions
+
+        TODO
+        ----
+        Figure out why this isn't as effective when called as a method
+        """
+        for mod in self.modules:
+            self.connect_all(mod)
+
     def connect(self, mod_a, mod_a_port, mod_b, mod_b_port):
         """
         Connects the 2 passed modules with the specified ports also ensures that the modules are
@@ -517,6 +528,11 @@ class Spacecraft:
             # links the modules together
             modCon.link(mod_a, mod_b)
             modCon.link(mod_b, mod_a)
+
+            mod_a_pos = modCon.get_pose(mod_a)
+            mod_a_pos = [round(mod_a_pos["x"], 3)] + [round(mod_a_pos["y"], 3)] + [round(mod_a_pos["z"], 3)]
+            mod_b_pos = modCon.get_pose(mod_b)
+            mod_b_pos = [round(mod_b_pos["x"], 3)] + [round(mod_b_pos["y"], 3)] + [round(mod_b_pos["z"], 3)]
 
     def connect_all(self, mod_id):
         """
@@ -704,14 +720,14 @@ class Spacecraft:
 
         if precision is None:
             precision = self.precision
-        cont = False
 
         loop_checker = 0
         prev_x = 0
         prev_y = 0
         prev_z = 0
 
-        while cont is False:
+        # while loop escapes with return
+        while True:
             modCon.set_dest(mod_id=mod_id, x=dest[0], y=dest[1], z=dest[2])
             pose = modCon.get_pose(mod_id)
 
@@ -727,7 +743,7 @@ class Spacecraft:
                 if dest[1] - precision <= pose["y"] <= dest[1] + precision:
                     if dest[2] - precision <= pose["z"] <= dest[2] + precision:
                         self.modules[mod_id].pos = tuple(dest)
-                        cont = True
+                        return
 
     def melt(self, root=None):
         """
@@ -781,9 +797,16 @@ class Spacecraft:
             # gets the path of coordinates for the module to travel along
             coord_path = self.__get_coord_path(current_path, base_cons[port_id])
 
+            print("Mod Coords: ")
+            for x in current_path:
+                print(self.modules[x].pos)
+
+            print("Found path")
+            for x in coord_path:
+                print(x)
+
             # disconnect the module and move it
-            self.disconnect_all(current_node)
-            print(coord_path)
+            # self.disconnect_all(current_node)
             tmp = input()
 
             # move current node over path by getting positions outside of modules
