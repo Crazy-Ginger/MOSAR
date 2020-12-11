@@ -794,6 +794,7 @@ class Spacecraft:
             print("Melting: ", current_node)
             print(current_path)
 
+            print("Port ID: ", port_id)
             # gets the path of coordinates for the module to travel along
             coord_path = self.__get_coord_path(current_path, base_cons[port_id])
 
