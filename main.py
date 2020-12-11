@@ -66,6 +66,7 @@ def main():
     print("sorting")
     craft.sort(mod_ids)
     print("sorted")
+    return
 
 
 if __name__ == "__main__":
