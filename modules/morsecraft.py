@@ -180,8 +180,7 @@ class Spacecraft:
 
             # checks if current_node is only connected by 1 link
             if sum(x is None for x in self.modules[current_node].cons) == 5 and current_node != root:
-                print("returning due to sum")
-                return path
+               return path
 
             # add the children nodes in order
             for child in self.modules[current_node].cons:
@@ -192,7 +191,6 @@ class Spacecraft:
                     to_visit.append(new_path)
 
             if to_return is True:
-                print("returing due to True")
                 return path
 
     def __init__(self, tag_length=3, precision=0.01, is_goal=False):
