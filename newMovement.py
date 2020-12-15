@@ -2,7 +2,7 @@
 import operator as op
 import numpy as np
 
-modules= {"00": [None, "03", "01", None, "10", None],
+modules = {"00": [None, "03", "01", None, "10", None],
           "01": ["00", "04", "02", None, "11", None],
           "02": ["01", "05", None, None, "12", None],
           "03": [None, "06", "04", "00", "13", None],
@@ -21,6 +21,17 @@ modules= {"00": [None, "03", "01", None, "10", None],
           "17": ["16", None, "18", "14", None, "07"],
           "18": ["17", None, None, "15", None, "08"]
           }
+
+alt_modules = {"00": [None, None, None, None, None, None],
+              "01": [None, None, None, None, None, None],
+              "02": [None, None, None, None, None, None],
+              "03": [None, None, None, None, None, None],
+              "04": [None, None, None, None, None, None],
+              "05": [None, None, None, None, None, None],
+              "06": [None, None, None, None, None, None],
+              "07": [None, None, None, None, None, None],
+              "08": [None, None, None, None, None, None]
+               }
 
 pos = {"00": [0.0, 0.0, 0.0],
        "01": [0.0, 0.1, 0.0],
@@ -41,6 +52,18 @@ pos = {"00": [0.0, 0.0, 0.0],
        "17": [0.2, 0.1, 0.1],
        "18": [0.2, 0.2, 0.1]
        }
+
+alt_pos = {"00": [0.0, 0.0, 0.0],
+           "01": [0.0, 0.1, 0.0],
+           "02": [0.0, 0.2, 0.0],
+           "03": [0.0, 0.3, 0.0],
+           "04": [0.0, 0.4, 0.0],
+           "05": [0.0, 0.5, 0.0],
+           "06": [0.0, 0.6, 0.0],
+           "07": [0.0, 0.7, 0.0],
+           "08": [0.0, 0.8, 0.0]
+           }
+
 
 def path_to_isolated(root):
     to_visit = [[root]]
