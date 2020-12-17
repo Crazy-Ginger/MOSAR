@@ -4,34 +4,34 @@ import operator as op
 import numpy as np
 
 modules = {"00": [None, "03", "01", None, "10", None],
-          "01": ["00", "04", "02", None, "11", None],
-          "02": ["01", "05", None, None, "12", None],
-          "03": [None, "06", "04", "00", "13", None],
-          "04": ["03", "07", "05", "02", "14", None],
-          "05": ["04", "08", None, "02", "15", None],
-          "06": [None, None, "07", "03", "16", None],
-          "07": ["06", None, "08", "04", "17", None],
-          "08": ["07", None, None, "05", "18", None],
-          "10": [None, "13", "11", None, None, "00"],
-          "11": ["10", "14", "12", None, None, "01"],
-          "12": ["11", "15", None, None, None, "02"],
-          "13": [None, "16", "14", "10", None, "03"],
-          "14": ["13", "17", "15", "12", None, "04"],
-          "15": ["14", "18", None, "12", None, "05"],
-          "16": [None, None, "17", "13", None, "06"],
-          "17": ["16", None, "18", "14", None, "07"],
-          "18": ["17", None, None, "15", None, "08"]
+           "01": ["00", "04", "02", None, "11", None],
+           "02": ["01", "05", None, None, "12", None],
+           "03": [None, "06", "04", "00", "13", None],
+           "04": ["03", "07", "05", "02", "14", None],
+           "05": ["04", "08", None, "02", "15", None],
+           "06": [None, None, "07", "03", "16", None],
+           "07": ["06", None, "08", "04", "17", None],
+           "08": ["07", None, None, "05", "18", None],
+           "10": [None, "13", "11", None, None, "00"],
+           "11": ["10", "14", "12", None, None, "01"],
+           "12": ["11", "15", None, None, None, "02"],
+           "13": [None, "16", "14", "10", None, "03"],
+           "14": ["13", "17", "15", "12", None, "04"],
+           "15": ["14", "18", None, "12", None, "05"],
+           "16": [None, None, "17", "13", None, "06"],
+           "17": ["16", None, "18", "14", None, "07"],
+           "18": ["17", None, None, "15", None, "08"]
           }
 
 alt_modules = {"00": [None, None, None, None, None, None],
-              "01": [None, None, None, None, None, None],
-              "02": [None, None, None, None, None, None],
-              "03": [None, None, None, None, None, None],
-              "04": [None, None, None, None, None, None],
-              "05": [None, None, None, None, None, None],
-              "06": [None, None, None, None, None, None],
-              "07": [None, None, None, None, None, None],
-              "08": [None, None, None, None, None, None]
+               "1": [None, None, None, None, None, None],
+               "2": [None, None, None, None, None, None],
+               "03": [None, None, None, None, None, None],
+               "4": [None, None, None, None, None, None],
+               "05": [None, None, None, None, None, None],
+               "6": [None, None, None, None, None, None],
+               "07": [None, None, None, None, None, None],
+               "8": [None, None, None, None, None, None]
                }
 
 pos = {"00": [0.0, 0.0, 0.0],
@@ -112,7 +112,7 @@ def get_new_position(fixed_mod, moving_mod, port_id):
         [0, 0, -z_diff],
     ]
 
-    # convert quaternions to rotation matrix which can be applied upon the ports
+    # convert quaternions to rotation matrix can be applied upon the ports
     q = [1] + [0] * 3
     rotation = np.array(
         [
