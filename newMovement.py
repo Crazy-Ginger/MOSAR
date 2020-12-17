@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import operator as op
+
 import numpy as np
 
 modules = {"00": [None, "03", "01", None, "10", None],
